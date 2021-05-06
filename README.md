@@ -4,10 +4,22 @@
 Another actor library! Why another? I really like the actor model for development, and wanted something simple I could
 use on top of [tokio](https://github.com/tokio-rs/tokio).
 
+```toml
+[dependencies]
+tiny-tokio-actor = "0.1"
+```
+
 Basically it provides:
 * An actor system with a message bus
 * A strongly typed actor with a single behaviour
 * Actors referenced through ActorRefs
+
+See the [docs](https://docs.rs/tiny-tokio-actor) and [integration tests](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/tests) for examples.
+
+There is still a lot to be done and the API will for sure change! The todo list so far:
+* Create `ActorPath` similar to that of Akka
+* Create macros to make the defining of actors a lot simpler
+* See if there is a way to do away with unsafe code blocks (perhaps using macros)
 
 Projects / blog posts that are worth checking out:
 * [Coerce-rs](https://github.com/LeonHartley/Coerce-rs)

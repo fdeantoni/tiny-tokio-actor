@@ -13,7 +13,7 @@ pub struct ActorContext<E: SystemEvent> {
 }
 
 pub trait Message: Clone + Send + Sync + 'static {
-    type Response: std::fmt::Debug + Send + Sync + 'static;
+    type Response: Send + Sync + 'static;
 }
 
 #[async_trait]

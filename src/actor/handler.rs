@@ -49,8 +49,8 @@ where
         let result = actor.handle(self.payload.clone(), ctx).await;
 
         if let Some(rsvp) = std::mem::replace(&mut self.rsvp, None) {
-            rsvp.send(result).unwrap_or_else(|failed| {
-                log::error!("Failed to send back result '{:?}'", failed);
+            rsvp.send(result).unwrap_or_else(|_failed| {
+                log::error!("Failed to send back response!");
             })
         }
     }
