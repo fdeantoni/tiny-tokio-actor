@@ -1,0 +1,19 @@
+[package]
+name = "tiny-tokio-actor"
+version = "0.1.0"
+edition = "2018"
+authors = ["fdeantoni <fdeantoni@gmail.com>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1", features = ["sync", "time", "macros"] }
+async-trait = "0.1"
+uuid = { version = "0.8", features = ["v4"] }
+log = "0.4"
+thiserror = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+env_logger = "0.8"
+dotenv = "0.15.0"
