@@ -3,6 +3,11 @@ name = "tiny-tokio-actor"
 version = "0.1.0"
 edition = "2018"
 authors = ["fdeantoni <fdeantoni@gmail.com>"]
+license = "Apache-2.0"
+keywords = ["tokio", "actors"]
+description = "A simple and tiny actor library on top of tokio."
+repository = "https://github.com/fdeantoni/tiny-tokio-actor"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
