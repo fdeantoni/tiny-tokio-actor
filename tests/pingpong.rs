@@ -5,7 +5,7 @@ use tiny_tokio_actor::{Actor, ActorContext, ActorSystem, EventBus, Handler, Mess
 
 #[derive(Clone)]
 struct PingActor {
-    counter: usize
+    counter: i8
 }
 
 impl Actor for PingActor {}
@@ -16,21 +16,26 @@ struct PongActor;
 impl Actor for PongActor {}
 
 #[derive(Clone, Debug)]
-enum PingPongMessage {
+enum PingMessage {
     Start(StartMessage),
-    Ping(usize),
-    Pong(usize),
-    Done(usize)
+    Ping(i8),
 }
 
 #[derive(Clone, Debug)]
 struct StartMessage {
     destination: Uuid,
-    limit: usize
+    limit: i8
 }
 
-impl Message for PingPongMessage {
-    type Response = PingPongMessage;
+impl Message for PingMessage {
+    type Response = PongMessage;
+}
+
+#[derive(Clone, Debug)]
+struct PongMessage(i8);
+
+impl Message for PongMessage {
+    type Response = ();
 }
 
 #[derive(Clone, Debug)]
@@ -39,31 +44,31 @@ struct EventMessage(String);
 impl SystemEvent for EventMessage {}
 
 #[async_trait]
-impl Handler<PingPongMessage, EventMessage> for PingActor {
-    async fn handle(&mut self, msg: PingPongMessage, ctx: &mut ActorContext<EventMessage>) -> PingPongMessage {
-        if let PingPongMessage::Start(message) = msg {
+impl Handler<PingMessage, EventMessage> for PingActor {
+    async fn handle(&mut self, msg: PingMessage, ctx: &mut ActorContext<EventMessage>) -> PongMessage {
+        if let PingMessage::Start(message) = msg {
             let limit = message.limit;
             if let Some(mut destination) = ctx.system.get_actor::<PongActor>(message.destination).await {
-                while self.counter < limit {
-                    self.counter += 1;
-                    let response = PingPongMessage::Ping(self.counter);
-                    let result = destination.ask(response).await.unwrap();
-                    log::debug!("Got back {:?}", result);
+                while self.counter > -1 && self.counter < limit {
+                    let ping = PingMessage::Ping(self.counter);
+                    let result = destination.ask(ping).await.unwrap();
+                    self.counter = result.0;
+                    ctx.system.publish(EventMessage(format!("Counter is now {}", self.counter)));
                 }
             }
         }
 
-        PingPongMessage::Done(self.counter)
+        PongMessage(self.counter)
     }
 }
 
 #[async_trait]
-impl Handler<PingPongMessage, EventMessage> for PongActor {
-    async fn handle(&mut self, msg: PingPongMessage, _ctx: &mut ActorContext<EventMessage>) -> PingPongMessage {
-        if let PingPongMessage::Ping(counter) = msg {
-            PingPongMessage::Pong(counter + 1)
+impl Handler<PingMessage, EventMessage> for PongActor {
+    async fn handle(&mut self, msg: PingMessage, _ctx: &mut ActorContext<EventMessage>) -> PongMessage {
+        if let PingMessage::Ping(counter) = msg {
+            PongMessage(counter + 1)
         } else {
-            PingPongMessage::Done(0)
+            PongMessage(-1)
         }
     }
 }
@@ -100,6 +105,7 @@ async fn test_ping_pong() {
 
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
-    let result = ping_ref.ask(PingPongMessage::Start(start)).await.unwrap();
-    println!("Final result: {:?}", result)
+    let result = ping_ref.ask(PingMessage::Start(start)).await.unwrap();
+    println!("Final result: {:?}", &result);
+    assert_eq!(result.0, 5);
 }
