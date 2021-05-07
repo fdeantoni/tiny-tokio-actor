@@ -37,8 +37,7 @@ impl<E: SystemEvent> ActorSystem<E> {
         })
     }
 
-    pub async fn create_actor<A: Actor>(&self, path: ActorPath, actor: A) -> Result<ActorRef<A, E>, ActorError> {
-
+    pub(crate) async fn create_actor_path<A: Actor>(&self, path: ActorPath, actor: A) -> Result<ActorRef<A, E>, ActorError> {
         let mut actors = self.actors.write().await;
         if actors.contains_key(&path) {
             return Err(ActorError::Create( format!("Actor path '{}' already exists.", &path) ))
@@ -56,6 +55,11 @@ impl<E: SystemEvent> ActorSystem<E> {
         actors.insert(path, any);
 
         Ok(actor_ref)
+    }
+
+    pub async fn create_actor<A: Actor>(&self, name: &str, actor: A) -> Result<ActorRef<A, E>, ActorError> {
+        let path = ActorPath::from("/user") / name;
+        self.create_actor_path(path, actor).await
     }
 
     pub async fn stop_actor(&self, path: &ActorPath) {
@@ -150,8 +154,7 @@ mod tests {
 
         let bus = EventBus::<TestEvent>::new(1000);
         let system = ActorSystem::new("test", bus);
-        let path = ActorPath::from("/some/actor");
-        let mut actor_ref = system.create_actor(path, actor).await.unwrap();
+        let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
         let result = actor_ref.ask(msg).await.unwrap();
 
         assert_eq!(result, 1);
@@ -171,8 +174,7 @@ mod tests {
         let system = ActorSystem::new("test", bus);
 
         {
-            let path = ActorPath::from("/some/actor");
-            let mut actor_ref = system.create_actor(path, actor).await.unwrap();
+            let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
             let result = actor_ref.ask(msg).await.unwrap();
 
             assert_eq!(result, 1);
@@ -195,8 +197,7 @@ mod tests {
 
         let bus = EventBus::<TestEvent>::new(1000);
         let system = ActorSystem::new("test", bus);
-        let path = ActorPath::from("/some/actor");
-        let mut actor_ref = system.create_actor(path, actor).await.unwrap();
+        let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
 
         let mut events = system.events();
         tokio::spawn(async move {
@@ -226,8 +227,7 @@ mod tests {
 
         let bus = EventBus::<TestEvent>::new(1000);
         let system = ActorSystem::new("test", bus);
-        let path = ActorPath::from("/some/actor");
-        let original = system.create_actor(path, actor).await.unwrap();
+        let original = system.create_actor("test-actor", actor).await.unwrap();
 
         if let Some(mut actor_ref) = system.get_actor::<TestActor>(original.get_path()).await {
             let msg = TestMessage(10);

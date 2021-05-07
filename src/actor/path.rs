@@ -97,6 +97,16 @@ impl From<&String> for ActorPath {
     }
 }
 
+impl std::ops::Div<&str> for ActorPath {
+    type Output = ActorPath;
+
+    fn div(self, rhs: &str) -> Self::Output {
+        let mut keys = self.0;
+        keys.push(rhs.to_string());
+        ActorPath(keys)
+    }
+}
+
 impl std::fmt::Display for ActorPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
         match self.level().cmp(&1) {
@@ -245,5 +255,13 @@ mod tests {
         assert_eq!(path.at_level(3), path.parent());
         assert_eq!(path.at_level(4), path);
         assert_eq!(path.at_level(5), path);
+    }
+
+    #[test]
+    fn test_add_path() {
+        let path = ActorPath::from("/acme");
+        let child = path.clone() / "child";
+        println!("{}", &child);
+        assert!(path.is_parent_of(&child))
     }
 }

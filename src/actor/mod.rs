@@ -14,6 +14,19 @@ pub struct ActorContext<E: SystemEvent> {
     pub system: ActorSystem<E>
 }
 
+impl<E: SystemEvent> ActorContext<E> {
+
+    pub async fn create_child<A: Actor>(&self, name: &str, actor: A) -> Result<ActorRef<A, E>, ActorError> {
+        let path = self.path.clone() / name;
+        self.system.create_actor_path(path, actor).await
+    }
+
+    pub async fn get_child<A: Actor>(&self, name: &str) -> Option<ActorRef<A, E>> {
+        let path = self.path.clone() / name;
+        self.system.get_actor(&path).await
+    }
+}
+
 pub trait Message: Clone + Send + Sync + 'static {
     type Response: Send + Sync + 'static;
 }

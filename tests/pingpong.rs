@@ -81,11 +81,9 @@ async fn test_ping_pong() {
     let system = ActorSystem::new("test", bus);
 
     let ping = PingActor { counter: 0 };
-    let ping_path = ActorPath::from("/ping");
-    let mut ping_ref = system.create_actor(ping_path, ping).await.unwrap();
+    let mut ping_ref = system.create_actor("ping", ping).await.unwrap();
     let pong = PongActor {};
-    let pong_path = ActorPath::from("/pong");
-    let pong_ref = system.create_actor(pong_path, pong).await.unwrap();
+    let pong_ref = system.create_actor("pong", pong).await.unwrap();
 
     let start = StartMessage {
         destination: pong_ref.get_path().clone(),

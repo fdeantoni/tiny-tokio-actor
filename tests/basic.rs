@@ -64,8 +64,7 @@ async fn simple_message() {
     // Create the actor system with the event bus
     let system = ActorSystem::new("test", bus);
     // Launch the actor on the actor system
-    let path = ActorPath::from("/some/actor");
-    let mut actor_ref = system.create_actor(path, actor).await.unwrap();
+    let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
 
     // Listen for events on the system event bus
     let mut events = system.events();
