@@ -19,13 +19,13 @@ pub struct ActorContext<E: SystemEvent> {
 impl<E: SystemEvent> ActorContext<E> {
 
     /// Create a child actor under this actor.
-    pub async fn create_child<A: Actor>(&self, name: &str, actor: A) -> Result<ActorRef<A, E>, ActorError> {
+    pub async fn create_child<A: Actor<E>>(&self, name: &str, actor: A) -> Result<ActorRef<A, E>, ActorError> {
         let path = self.path.clone() / name;
         self.system.create_actor_path(path, actor).await
     }
 
     /// Retrieve a child actor running under this actor.
-    pub async fn get_child<A: Actor>(&self, name: &str) -> Option<ActorRef<A, E>> {
+    pub async fn get_child<A: Actor<E>>(&self, name: &str) -> Option<ActorRef<A, E>> {
         let path = self.path.clone() / name;
         self.system.get_actor(&path).await
     }
@@ -45,24 +45,24 @@ pub trait Handler<M: Message, E: SystemEvent>: Send + Sync {
 /// Basic trait for actors. Allows you to define tasks that should be run before
 /// actor startup, and tasks that should be run after the  actor is stopped.
 #[async_trait]
-pub trait Actor: Clone + Send + Sync + 'static {
+pub trait Actor<E: SystemEvent>: Clone + Send + Sync + 'static {
 
     /// Override this function if you like to perform initialization of the actor
-    async fn pre_start<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {}
+    async fn pre_start(&mut self, _ctx: &mut ActorContext<E>) {}
 
     /// Override this function if you like to perform work when the actor is stopped
-    async fn post_stop<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {}
+    async fn post_stop(&mut self, _ctx: &mut ActorContext<E>) {}
 }
 
 /// A clonable actor reference. It basically holds a Sender that can send messages
 /// to the mailbox (receiver) of the actor.
 #[derive(Clone)]
-pub struct ActorRef<A: Actor, E: SystemEvent> {
+pub struct ActorRef<A: Actor<E>, E: SystemEvent> {
     path: ActorPath,
     sender: handler::HandlerRef<A, E>
 }
 
-impl<A: Actor, E: SystemEvent> ActorRef<A, E> {
+impl<A: Actor<E>, E: SystemEvent> ActorRef<A, E> {
 
     /// Get the path of this actor
     pub fn get_path(&self) -> &ActorPath {

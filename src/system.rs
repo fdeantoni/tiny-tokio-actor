@@ -31,14 +31,14 @@ impl<E: SystemEvent> ActorSystem<E> {
         self.bus.subscribe()
     }
 
-    pub async fn get_actor<A: Actor>(&self, path: &ActorPath) -> Option<ActorRef<A, E>> {
+    pub async fn get_actor<A: Actor<E>>(&self, path: &ActorPath) -> Option<ActorRef<A, E>> {
         let actors = self.actors.read().await;
         actors.get(path).and_then(|any| {
             any.downcast_ref::<ActorRef<A, E>>().cloned()
         })
     }
 
-    pub(crate) async fn create_actor_path<A: Actor>(&self, path: ActorPath, actor: A) -> Result<ActorRef<A, E>, ActorError> {
+    pub(crate) async fn create_actor_path<A: Actor<E>>(&self, path: ActorPath, actor: A) -> Result<ActorRef<A, E>, ActorError> {
         let mut actors = self.actors.write().await;
         if actors.contains_key(&path) {
             return Err(ActorError::Create( format!("Actor path '{}' already exists.", &path) ))
@@ -58,7 +58,7 @@ impl<E: SystemEvent> ActorSystem<E> {
         Ok(actor_ref)
     }
 
-    pub async fn create_actor<A: Actor>(&self, name: &str, actor: A) -> Result<ActorRef<A, E>, ActorError> {
+    pub async fn create_actor<A: Actor<E>>(&self, name: &str, actor: A) -> Result<ActorRef<A, E>, ActorError> {
         let path = ActorPath::from("/user") / name;
         self.create_actor_path(path, actor).await
     }
@@ -94,12 +94,12 @@ mod tests {
     }
 
     #[async_trait]
-    impl Actor for TestActor {
-        async fn pre_start<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {
+    impl Actor<TestEvent> for TestActor {
+        async fn pre_start(&mut self, _ctx: &mut ActorContext<TestEvent>) {
             log::debug!("Starting actor TestActor!");
         }
 
-        async fn post_stop<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {
+        async fn post_stop(&mut self, _ctx: &mut ActorContext<TestEvent>) {
             log::debug!("Stopped actor TestActor!");
         }
     }
@@ -130,7 +130,7 @@ mod tests {
         message: String
     }
 
-    impl Actor for OtherActor {}
+    impl Actor<TestEvent> for OtherActor {}
 
     #[derive(Clone, Debug)]
     struct OtherMessage(String);

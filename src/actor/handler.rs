@@ -8,7 +8,7 @@ use crate::{actor::{ActorContext, Handler, Message}, system::SystemEvent};
 use super::{Actor, ActorError};
 
 #[async_trait]
-pub trait MessageHandler<A: Actor, E: SystemEvent>: Send + Sync {
+pub trait MessageHandler<A: Actor<E>, E: SystemEvent>: Send + Sync {
 
     async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>);
 }
@@ -17,7 +17,7 @@ struct ActorMessage<M, A, E>
 where
     M: Message,
     E: SystemEvent,
-    A: Actor + Handler<M, E>,
+    A: Actor<E> + Handler<M, E>,
 {
     payload: M,
     rsvp: Option<oneshot::Sender<M::Response>>,
@@ -30,7 +30,7 @@ impl<M, A, E> MessageHandler<A, E> for ActorMessage<M, A, E>
 where
     M: Message,
     E: SystemEvent,
-    A: Actor + Handler<M, E>,
+    A: Actor<E> + Handler<M, E>,
 {
     async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
         self.process(actor, ctx).await
@@ -41,7 +41,7 @@ impl<M, A, E> ActorMessage<M, A, E>
 where
     M: Message,
     E: SystemEvent,
-    A: Actor + Handler<M, E>,
+    A: Actor<E> + Handler<M, E>,
 {
 
     async fn process(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
@@ -68,12 +68,12 @@ where
 pub type MailboxReceiver<A, E> = mpsc::UnboundedReceiver<BoxedMessageHandler<A, E>>;
 pub type MailboxSender<A, E> = mpsc::UnboundedSender<BoxedMessageHandler<A, E>>;
 
-pub struct ActorMailbox<A: Actor, E: SystemEvent> {
+pub struct ActorMailbox<A: Actor<E>, E: SystemEvent> {
     _phantom_actor: PhantomData<A>,
     _phantom_event: PhantomData<E>
 }
 
-impl<A: Actor, E: SystemEvent> ActorMailbox<A, E> {
+impl<A: Actor<E>, E: SystemEvent> ActorMailbox<A, E> {
 
     pub fn create() -> (MailboxSender<A, E>, MailboxReceiver<A, E>) {
         mpsc::unbounded_channel()
@@ -83,11 +83,11 @@ impl<A: Actor, E: SystemEvent> ActorMailbox<A, E> {
 pub type BoxedMessageHandler<A, E> = Box<dyn MessageHandler<A, E>>;
 
 #[derive(Clone)]
-pub struct HandlerRef<A: Actor, E: SystemEvent> {
+pub struct HandlerRef<A: Actor<E>, E: SystemEvent> {
     sender: mpsc::UnboundedSender<BoxedMessageHandler<A, E>>
 }
 
-impl<A: Actor, E: SystemEvent> HandlerRef<A, E> {
+impl<A: Actor<E>, E: SystemEvent> HandlerRef<A, E> {
 
     pub(crate) fn new(sender: mpsc::UnboundedSender<BoxedMessageHandler<A, E>>) -> Self {
         HandlerRef {
@@ -158,7 +158,7 @@ mod tests {
         }
     }
 
-    impl Actor for MyActor {}
+    impl Actor<MyMessage> for MyActor {}
 
     #[tokio::test]
     async fn actor_tell() {

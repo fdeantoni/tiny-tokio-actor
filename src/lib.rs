@@ -12,6 +12,13 @@
 //! ```
 //! use tiny_tokio_actor::*;
 //!
+//! // The event message you may want to publish to the system event bus.
+//! #[derive(Clone, Debug)]
+//! struct TestEvent(String);
+//!
+//! // Mark the struct as a system event message.
+//! impl SystemEvent for TestEvent {}
+//!
 //! // The actor struct must derive Clone.
 //! #[derive(Clone)]
 //! struct TestActor {
@@ -19,7 +26,7 @@
 //! }
 //!
 //! // Mark the struct as an actor.
-//! impl Actor for TestActor {}
+//! impl Actor<TestEvent> for TestActor {}
 //!
 //! // The message the actor will expect. It must derive Clone.
 //! // Debug is not required.
@@ -32,14 +39,6 @@
 //! impl Message for TestMessage {
 //!     type Response = String;
 //! }
-//!
-//! // The event message you may want to publish to the system event
-//! // bus.
-//! #[derive(Clone, Debug)]
-//! struct TestEvent(String);
-//!
-//! // Mark the struct as a system event message.
-//! impl SystemEvent for TestEvent {}
 //!
 //! // Define the behaviour of the actor. Note that the `handle` method
 //! // has a `String` return type because that is what we defined the

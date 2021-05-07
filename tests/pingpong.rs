@@ -1,16 +1,21 @@
 use tiny_tokio_actor::*;
 
+#[derive(Clone, Debug)]
+struct EventMessage(String);
+
+impl SystemEvent for EventMessage {}
+
 #[derive(Clone)]
 struct PingActor {
     counter: i8
 }
 
-impl Actor for PingActor {}
+impl Actor<EventMessage> for PingActor {}
 
 #[derive(Clone)]
 struct PongActor;
 
-impl Actor for PongActor {}
+impl Actor<EventMessage> for PongActor {}
 
 #[derive(Clone, Debug)]
 enum PingMessage {
@@ -34,11 +39,6 @@ struct PongMessage(i8);
 impl Message for PongMessage {
     type Response = ();
 }
-
-#[derive(Clone, Debug)]
-struct EventMessage(String);
-
-impl SystemEvent for EventMessage {}
 
 #[async_trait]
 impl Handler<PingMessage, EventMessage> for PingActor {
