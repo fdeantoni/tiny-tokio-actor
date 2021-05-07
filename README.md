@@ -19,7 +19,6 @@ See the [docs](https://docs.rs/tiny-tokio-actor) and [integration tests](https:/
 There is still a lot to be done and the API will for sure change! The todo list so far:
 * Create `ActorPath` similar to that of Akka
 * Create macros to make the defining of actors a lot simpler
-* See if there is a way to do away with unsafe code blocks (perhaps using macros)
 
 Projects / blog posts that are worth checking out:
 * [Coerce-rs](https://github.com/LeonHartley/Coerce-rs)

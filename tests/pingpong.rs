@@ -48,7 +48,7 @@ impl Handler<PingMessage, EventMessage> for PingActor {
     async fn handle(&mut self, msg: PingMessage, ctx: &mut ActorContext<EventMessage>) -> PongMessage {
         if let PingMessage::Start(message) = msg {
             let limit = message.limit;
-            if let Some(mut destination) = ctx.system.get_actor::<PongActor>(message.destination).await {
+            if let Some(mut destination) = ctx.system.get_actor::<PongActor>(&message.destination).await {
                 while self.counter > -1 && self.counter < limit {
                     let ping = PingMessage::Ping(self.counter);
                     let result = destination.ask(ping).await.unwrap();

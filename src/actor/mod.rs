@@ -52,36 +52,12 @@ impl<A: Actor, E: SystemEvent> ActorRef<A, E> {
         self.sender.ask(msg).await
     }
 
-    pub(crate) fn get_any(&self) -> AnyActorRef {
-        AnyActorRef {
-            id: self.id,
-            sender: self.sender.clone().into()
-        }
-    }
-
     pub fn new(id: Uuid, sender: handler::MailboxSender<A, E>) -> Self {
         let handler = handler::HandlerRef::new(sender);
         ActorRef {
             id,
             sender: handler
         }
-    }
-}
-
-#[derive(Clone)]
-pub(crate) struct AnyActorRef {
-    id: Uuid,
-    sender: handler::AnyHandlerRef
-}
-
-impl AnyActorRef {
-
-    pub fn get_ref<A: Actor, E: SystemEvent>(&self) -> ActorRef<A, E> {
-        let handler: handler::HandlerRef<A, E> = self.sender.clone().into();
-            ActorRef {
-                id: self.id,
-                sender: handler
-            }
     }
 }
 

@@ -1,4 +1,4 @@
-use std::{any::Any, marker::PhantomData};
+use std::marker::PhantomData;
 
 use async_trait::async_trait;
 use tokio::sync::{mpsc, oneshot};
@@ -81,32 +81,10 @@ impl<A: Actor, E: SystemEvent> ActorMailbox<A, E> {
 }
 
 pub type BoxedMessageHandler<A, E> = Box<dyn MessageHandler<A, E>>;
-pub type AnyMessageHandler = Box<dyn Any + Sync + Send>;
 
 #[derive(Clone)]
 pub struct HandlerRef<A: Actor, E: SystemEvent> {
     sender: mpsc::UnboundedSender<BoxedMessageHandler<A, E>>
-}
-
-#[derive(Clone)]
-pub struct AnyHandlerRef {
-    pub sender: mpsc::UnboundedSender<AnyMessageHandler>
-}
-
-impl<A: Actor, E: SystemEvent> From<AnyHandlerRef> for HandlerRef<A, E> {
-    fn from(handler: AnyHandlerRef) -> Self {
-        HandlerRef {
-            sender: unsafe { std::mem::transmute(handler.sender) }
-        }
-    }
-}
-
-impl<A: Actor, E: SystemEvent> From<HandlerRef<A, E>> for AnyHandlerRef {
-    fn from(handler: HandlerRef<A, E>) -> Self {
-        AnyHandlerRef {
-            sender: unsafe { std::mem::transmute(handler.sender) }
-        }
-    }
 }
 
 impl<A: Actor, E: SystemEvent> HandlerRef<A, E> {
@@ -239,36 +217,4 @@ mod tests {
         let result = actor_ref.ask(msg).await.unwrap();
         assert_eq!(result, 1);
     }
-
-    #[tokio::test]
-    async fn ref_transmute() {
-
-        if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", "trace");
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
-
-        let mut actor = MyActor { counter: 0 };
-        let msg = MyMessage("Hello World!".to_string());
-        let (sender, mut receiver): (MailboxSender<MyActor, MyMessage>, MailboxReceiver<MyActor, MyMessage>) = ActorMailbox::create();
-        let actor_ref = HandlerRef {
-            sender
-        };
-        let any_ref: AnyHandlerRef = actor_ref.into();
-        let bus = EventBus::<MyMessage>::new(1000);
-        let system = ActorSystem::new("test", bus);
-        let id =  Uuid::new_v4();
-        let mut ctx = ActorContext { id, system };
-        tokio::spawn( async move {
-            while let Some(mut msg) = receiver.recv().await {
-                msg.handle(&mut actor, &mut ctx).await;
-            }
-        });
-
-        let mut check: HandlerRef<MyActor, MyMessage> = any_ref.into();
-        check.tell(msg).unwrap();
-
-        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
-    }
-
 }
