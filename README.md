@@ -17,7 +17,7 @@ Basically it provides:
 See the [docs](https://docs.rs/tiny-tokio-actor) and [integration tests](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/tests) for examples.
 
 There is still a lot to be done and the API will for sure change! The todo list so far:
-* Create `ActorPath` similar to that of Akka
+* Supervisor hierarchy
 * Create macros to make the defining of actors a lot simpler
 
 Projects / blog posts that are worth checking out:

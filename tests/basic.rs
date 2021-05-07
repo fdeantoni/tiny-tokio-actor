@@ -42,7 +42,7 @@ impl Handler<TestMessage, TestEvent> for TestActor {
         self.counter += 1;
         log::debug!("counter is now {}", &self.counter);
         log::debug!("actor on system {}", ctx.system.get_name());
-        ctx.system.publish(TestEvent(format!("message received by '{}'", ctx.id)));
+        ctx.system.publish(TestEvent(format!("message received by '{}'", ctx.path)));
         "Ping!".to_string()
     }
 }
@@ -64,7 +64,8 @@ async fn simple_message() {
     // Create the actor system with the event bus
     let system = ActorSystem::new("test", bus);
     // Launch the actor on the actor system
-    let mut actor_ref = system.create_actor(actor).await;
+    let path = ActorPath::from("/some/actor");
+    let mut actor_ref = system.create_actor(path, actor).await.unwrap();
 
     // Listen for events on the system event bus
     let mut events = system.events();

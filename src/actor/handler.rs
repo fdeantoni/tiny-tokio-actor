@@ -130,10 +130,9 @@ impl<A: Actor, E: SystemEvent> HandlerRef<A, E> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{bus::EventBus, system::ActorSystem};
+    use crate::{ActorPath, bus::EventBus, system::ActorSystem};
 
     use super::*;
-    use uuid::Uuid;
 
     #[derive(Clone)]
     struct MyActor {
@@ -177,8 +176,8 @@ mod tests {
         };
         let bus = EventBus::<MyMessage>::new(1000);
         let system = ActorSystem::new("test", bus);
-        let id =  Uuid::new_v4();
-        let mut ctx = ActorContext { id, system };
+        let path = ActorPath::from("/test");
+        let mut ctx = ActorContext { path, system };
         tokio::spawn( async move {
             while let Some(mut msg) = receiver.recv().await {
                 msg.handle(&mut actor, &mut ctx).await;
@@ -206,8 +205,8 @@ mod tests {
         };
         let bus = EventBus::<MyMessage>::new(1000);
         let system = ActorSystem::new("test", bus);
-        let id =  Uuid::new_v4();
-        let mut ctx = ActorContext { id, system };
+        let path = ActorPath::from("/test");
+        let mut ctx = ActorContext { path, system };
         tokio::spawn( async move {
             while let Some(mut msg) = receiver.recv().await {
                 msg.handle(&mut actor, &mut ctx).await;

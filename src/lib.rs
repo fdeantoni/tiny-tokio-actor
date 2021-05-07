@@ -50,13 +50,13 @@
 //! impl Handler<TestMessage, TestEvent> for TestActor {
 //!     async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> String {
 //!         self.counter += 1;
-//!         ctx.system.publish(TestEvent(format!("message received by '{}'", ctx.id)));
+//!         ctx.system.publish(TestEvent(format!("message received by '{}'", ctx.path)));
 //!         "Ping!".to_string()
 //!     }
 //! }
 //!
 //! #[tokio::main]
-//! pub async fn main() {
+//! pub async fn main() -> Result<(), ActorError> {
 //!
 //!     // Create the actor
 //!     let actor = TestActor { counter: 0 };
@@ -68,7 +68,8 @@
 //!     // Create the actor system with the event bus
 //!     let system = ActorSystem::new("test", bus);
 //!     // Launch the actor on the actor system
-//!     let mut actor_ref = system.create_actor(actor).await;
+//!     let path = ActorPath::from("/some/actor");
+//!     let mut actor_ref = system.create_actor(path, actor).await?;
 //!
 //!     // Listen for events on the system event bus
 //!     let mut events = system.events();
@@ -86,8 +87,9 @@
 //!
 //!     // Send the actor the message through an `ask` from which we will
 //!     // get a response
-//!     let response = actor_ref.ask(msg).await.unwrap();
+//!     let response = actor_ref.ask(msg).await?;
 //!     println!("Response: {}", response);
+//!     Ok(())
 //! }
 //! ```
 
@@ -95,7 +97,7 @@ mod actor;
 mod bus;
 mod system;
 
-pub use actor::{Actor, ActorRef, ActorError, ActorContext, Handler, Message};
+pub use actor::{Actor, ActorRef, ActorPath, ActorError, ActorContext, Handler, Message};
 pub use bus::EventBus;
 pub use system::{ActorSystem, SystemEvent};
 

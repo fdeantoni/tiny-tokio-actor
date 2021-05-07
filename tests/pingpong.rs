@@ -1,7 +1,4 @@
-use async_trait::async_trait;
-use uuid::Uuid;
-
-use tiny_tokio_actor::{Actor, ActorContext, ActorSystem, EventBus, Handler, Message, SystemEvent};
+use tiny_tokio_actor::*;
 
 #[derive(Clone)]
 struct PingActor {
@@ -23,7 +20,7 @@ enum PingMessage {
 
 #[derive(Clone, Debug)]
 struct StartMessage {
-    destination: Uuid,
+    destination: ActorPath,
     limit: i8
 }
 
@@ -84,12 +81,14 @@ async fn test_ping_pong() {
     let system = ActorSystem::new("test", bus);
 
     let ping = PingActor { counter: 0 };
-    let mut ping_ref = system.create_actor(ping).await;
+    let ping_path = ActorPath::from("/ping");
+    let mut ping_ref = system.create_actor(ping_path, ping).await.unwrap();
     let pong = PongActor {};
-    let pong_ref = system.create_actor(pong).await;
+    let pong_path = ActorPath::from("/pong");
+    let pong_ref = system.create_actor(pong_path, pong).await.unwrap();
 
     let start = StartMessage {
-        destination: *pong_ref.get_id(),
+        destination: pong_ref.get_path().clone(),
         limit: 5
     };
 

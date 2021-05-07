@@ -1,14 +1,16 @@
 pub(crate) mod handler;
-pub mod runner;
+pub(crate) mod runner;
+
+mod path;
+pub use path::ActorPath;
 
 use thiserror::Error;
 use async_trait::async_trait;
-use uuid::Uuid;
 
 use crate::system::{ActorSystem, SystemEvent};
 
 pub struct ActorContext<E: SystemEvent> {
-    pub id: Uuid,
+    pub path: ActorPath,
     pub system: ActorSystem<E>
 }
 
@@ -26,14 +28,14 @@ pub trait Actor: Clone + Send + Sync + 'static {}
 
 #[derive(Clone)]
 pub struct ActorRef<A: Actor, E: SystemEvent> {
-    id: Uuid,
+    path: ActorPath,
     sender: handler::HandlerRef<A, E>
 }
 
 impl<A: Actor, E: SystemEvent> ActorRef<A, E> {
 
-    pub fn get_id(&self) -> &Uuid {
-        &self.id
+    pub fn get_path(&self) -> &ActorPath {
+        &self.path
     }
 
     pub fn tell<M>(&mut self, msg: M) -> Result<(), ActorError>
@@ -52,10 +54,10 @@ impl<A: Actor, E: SystemEvent> ActorRef<A, E> {
         self.sender.ask(msg).await
     }
 
-    pub fn new(id: Uuid, sender: handler::MailboxSender<A, E>) -> Self {
+    pub fn new(path: ActorPath, sender: handler::MailboxSender<A, E>) -> Self {
         let handler = handler::HandlerRef::new(sender);
         ActorRef {
-            id,
+            path,
             sender: handler
         }
     }
@@ -63,6 +65,9 @@ impl<A: Actor, E: SystemEvent> ActorRef<A, E> {
 
 #[derive(Error, Debug)]
 pub enum ActorError {
+
+    #[error("Actor creation failed")]
+    Create(String),
 
     #[error("Actor runtime error")]
     Runtime(String)

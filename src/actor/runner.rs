@@ -1,23 +1,20 @@
-use uuid::Uuid;
-
 use crate::system::{ActorSystem, SystemEvent};
 
-use super::{Actor, ActorContext, ActorRef, handler::{ActorMailbox, MailboxReceiver}};
+use super::{Actor, ActorContext, ActorRef, ActorPath, handler::{ActorMailbox, MailboxReceiver}};
 
 pub struct ActorRunner<A: Actor, E: SystemEvent> {
-    id: Uuid,
+    path: ActorPath,
     actor: A,
     receiver: MailboxReceiver<A, E>,
 }
 
 impl<A: Actor, E: SystemEvent> ActorRunner<A, E> {
 
-    pub fn create(actor: A) -> (Self, ActorRef<A, E>) {
+    pub fn create(path: ActorPath, actor: A) -> (Self, ActorRef<A, E>) {
         let (sender, receiver) = ActorMailbox::create();
-        let id = Uuid::new_v4();
-        let actor_ref = ActorRef::new(id, sender);
+        let actor_ref = ActorRef::new(path.clone(), sender);
         let runner = ActorRunner {
-            id,
+            path,
             actor,
             receiver,
         };
@@ -26,10 +23,10 @@ impl<A: Actor, E: SystemEvent> ActorRunner<A, E> {
 
     pub async fn start(&mut self, system: ActorSystem<E>) {
 
-        log::debug!("Starting actor '{}'...", &self.id);
+        log::debug!("Starting actor '{}'...", &self.path);
 
         let mut ctx = ActorContext {
-            id: self.id,
+            path: self.path.clone(),
             system,
         };
 
@@ -37,6 +34,6 @@ impl<A: Actor, E: SystemEvent> ActorRunner<A, E> {
             msg.handle(&mut self.actor, &mut ctx).await;
         }
 
-        log::debug!("Actor '{}' stopped.", &self.id);
+        log::debug!("Actor '{}' stopped.", &self.path);
     }
 }
