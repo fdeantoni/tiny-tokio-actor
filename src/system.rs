@@ -39,6 +39,9 @@ impl<E: SystemEvent> ActorSystem<E> {
     }
 
     pub(crate) async fn create_actor_path<A: Actor<E>>(&self, path: ActorPath, actor: A) -> Result<ActorRef<A, E>, ActorError> {
+
+        log::debug!("Creating actor '{}' on system '{}'...", &path, &self.name);
+
         let mut actors = self.actors.write().await;
         if actors.contains_key(&path) {
             return Err(ActorError::Create( format!("Actor path '{}' already exists.", &path) ))
@@ -64,8 +67,22 @@ impl<E: SystemEvent> ActorSystem<E> {
     }
 
     pub async fn stop_actor(&self, path: &ActorPath) {
+        log::debug!("Stopping actor '{}' on system '{}'...", &path, &self.name);
+        let mut paths: Vec<ActorPath> = Vec::new();
+        {
+            let current_actors = self.actors.read().await;
+            for child in current_actors.keys() {
+                if child.is_descendant_of(path) {
+                    paths.push(child.clone());
+                }
+            }
+        }
+        paths.sort_unstable();
+        paths.reverse();
         let mut actors = self.actors.write().await;
-        actors.remove(path);
+        for path in &paths {
+            actors.remove(path);
+        }
     }
 
     pub fn new(name: &str, bus: EventBus<E>) -> Self {
@@ -119,7 +136,7 @@ mod tests {
             log::debug!("received message! {:?}", &msg);
             self.counter += 1;
             log::debug!("counter is now {}", &self.counter);
-            log::debug!("actor on system {}", ctx.system.get_name());
+            log::debug!("{} on system {}", &ctx.path, ctx.system.get_name());
             ctx.system.publish(TestEvent("Message received!".to_string()));
             self.counter
         }
@@ -127,10 +144,21 @@ mod tests {
 
     #[derive(Clone)]
     struct OtherActor {
-        message: String
+        message: String,
+        child: Option<ActorRef<TestActor, TestEvent>>
     }
 
-    impl Actor<TestEvent> for OtherActor {}
+    #[async_trait]
+    impl Actor<TestEvent> for OtherActor {
+        async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) {
+            let child = TestActor { counter: 0 };
+            self.child = ctx.create_child("child", child).await.ok();
+        }
+
+        async fn post_stop(&mut self, _ctx: &mut ActorContext<TestEvent>) {
+            log::debug!("OtherActor stopped.");
+        }
+    }
 
     #[derive(Clone, Debug)]
     struct OtherMessage(String);
@@ -146,7 +174,7 @@ mod tests {
             log::debug!("original message is {}", &self.message);
             self.message = msg.0;
             log::debug!("message is now {}", &self.message);
-            log::debug!("actor on system {}", ctx.system.get_name());
+            log::debug!("{} on system {}", &ctx.path, ctx.system.get_name());
             ctx.system.publish(TestEvent("Received message!".to_string()));
             self.message.clone()
         }
@@ -255,5 +283,38 @@ mod tests {
         }
 
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    }
+
+    #[tokio::test]
+    async fn actor_parent_child() {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder().is_test(true).try_init();
+
+        let actor = OtherActor {
+            message: "Initial".to_string(),
+            child: None
+        };
+
+        let bus = EventBus::<TestEvent>::new(1000);
+        let system = ActorSystem::new("test", bus);
+
+        {
+            let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
+            let msg = OtherMessage("new message!".to_string());
+            let result = actor_ref.ask(msg).await.unwrap();
+            assert_eq!(result, "new message!".to_string());
+
+            tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+            system.stop_actor(actor_ref.get_path()).await;
+        }
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+        let actors = system.actors.read().await;
+        for actor in actors.keys() {
+            println!("Still active!: {:?}", actor);
+        }
+        assert_eq!(actors.len(), 0);
     }
 }

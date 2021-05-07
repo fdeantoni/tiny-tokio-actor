@@ -96,6 +96,12 @@ impl<A: Actor<E>, E: SystemEvent> ActorRef<A, E> {
     }
 }
 
+impl<A: Actor<E>, E: SystemEvent> std::fmt::Debug for ActorRef<A, E> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.path)
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum ActorError {
 
