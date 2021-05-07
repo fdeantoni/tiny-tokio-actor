@@ -1,5 +1,5 @@
 # *Tiny Tokio Actor* #
-[![crates.io](http://meritbadge.herokuapp.com/tiny-tokio-actor)](https://crates.io/crates/tiny-tokio-actor)
+[![crates.io](http://meritbadge.herokuapp.com/tiny-tokio-actor)](https://crates.io/crates/tiny-tokio-actor) [![build](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml/badge.svg)](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml)
 
 Another actor library! Why another? I really like the actor model for development, and wanted something simple I could
 use on top of [tokio](https://github.com/tokio-rs/tokio).
