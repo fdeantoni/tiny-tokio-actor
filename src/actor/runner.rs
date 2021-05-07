@@ -2,7 +2,7 @@ use crate::system::{ActorSystem, SystemEvent};
 
 use super::{Actor, ActorContext, ActorRef, ActorPath, handler::{ActorMailbox, MailboxReceiver}};
 
-pub struct ActorRunner<A: Actor, E: SystemEvent> {
+pub(crate) struct ActorRunner<A: Actor, E: SystemEvent> {
     path: ActorPath,
     actor: A,
     receiver: MailboxReceiver<A, E>,
@@ -30,9 +30,13 @@ impl<A: Actor, E: SystemEvent> ActorRunner<A, E> {
             system,
         };
 
+        self.actor.pre_start(&mut ctx);
+
         while let Some(mut msg) = self.receiver.recv().await {
             msg.handle(&mut self.actor, &mut ctx).await;
         }
+
+        self.actor.post_stop(&mut ctx);
 
         log::debug!("Actor '{}' stopped.", &self.path);
     }

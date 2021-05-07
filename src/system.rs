@@ -4,6 +4,7 @@ use tokio::sync::RwLock;
 
 use crate::{ActorError, ActorPath, actor::{Actor, ActorRef, runner::ActorRunner}, bus::{EventBus, EventConsumer}};
 
+/// Events that this actor system will send
 pub trait SystemEvent: Clone + Send + Sync + 'static {}
 
 #[derive(Clone)]
@@ -92,7 +93,15 @@ mod tests {
         counter: usize
     }
 
-    impl Actor for TestActor {}
+    impl Actor for TestActor {
+        fn pre_start<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {
+            log::debug!("Starting actor TestActor!");
+        }
+
+        fn post_stop<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {
+            log::debug!("Stopped actor TestActor!");
+        }
+    }
 
     #[derive(Clone, Debug)]
     struct TestMessage(usize);
