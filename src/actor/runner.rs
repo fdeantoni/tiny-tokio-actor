@@ -30,13 +30,13 @@ impl<A: Actor, E: SystemEvent> ActorRunner<A, E> {
             system,
         };
 
-        self.actor.pre_start(&mut ctx);
+        self.actor.pre_start(&mut ctx).await;
 
         while let Some(mut msg) = self.receiver.recv().await {
             msg.handle(&mut self.actor, &mut ctx).await;
         }
 
-        self.actor.post_stop(&mut ctx);
+        self.actor.post_stop(&mut ctx).await;
 
         log::debug!("Actor '{}' stopped.", &self.path);
     }

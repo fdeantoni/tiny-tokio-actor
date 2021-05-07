@@ -93,12 +93,13 @@ mod tests {
         counter: usize
     }
 
+    #[async_trait]
     impl Actor for TestActor {
-        fn pre_start<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {
+        async fn pre_start<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {
             log::debug!("Starting actor TestActor!");
         }
 
-        fn post_stop<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {
+        async fn post_stop<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {
             log::debug!("Stopped actor TestActor!");
         }
     }

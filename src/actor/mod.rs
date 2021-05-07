@@ -44,15 +44,14 @@ pub trait Handler<M: Message, E: SystemEvent>: Send + Sync {
 
 /// Basic trait for actors. Allows you to define tasks that should be run before
 /// actor startup, and tasks that should be run after the  actor is stopped.
+#[async_trait]
 pub trait Actor: Clone + Send + Sync + 'static {
 
     /// Override this function if you like to perform initialization of the actor
-    fn pre_start<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {}
+    async fn pre_start<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {}
 
     /// Override this function if you like to perform work when the actor is stopped
-    fn post_stop<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {}
-
-
+    async fn post_stop<E: SystemEvent>(&mut self, _ctx: &mut ActorContext<E>) {}
 }
 
 /// A clonable actor reference. It basically holds a Sender that can send messages
