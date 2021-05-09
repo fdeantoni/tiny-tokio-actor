@@ -112,7 +112,7 @@ async fn multi_message() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 
     let msg_a = TestMessage("hello world!".to_string());
     let response_a = actor_ref.ask(msg_a).await.unwrap();

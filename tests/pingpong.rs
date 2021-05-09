@@ -100,7 +100,7 @@ async fn test_ping_pong() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(5)).await;
 
     let result = ping_ref.ask(PingMessage::Start(start)).await.unwrap();
     println!("Final result: {:?}", &result);

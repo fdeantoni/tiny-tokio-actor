@@ -81,7 +81,7 @@
 //!     });
 //!
 //!     // Wait a little for the actor to start up
-//!     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+//!     tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
 //!
 //!     // Send the actor the message through an `ask` from which we will
 //!     // get a response
