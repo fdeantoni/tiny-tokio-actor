@@ -1,6 +1,7 @@
 use std::fmt::{Error, Formatter};
 use std::cmp::Ordering;
 
+/// Unique identifier for running actors.
 #[derive(Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct ActorPath(Vec<String>);
 

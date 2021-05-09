@@ -41,7 +41,7 @@ impl Handler<TestMessage, TestEvent> for TestActor {
         log::debug!("received message! {:?}", &msg);
         self.counter += 1;
         log::debug!("counter is now {}", &self.counter);
-        log::debug!("actor on system {}", ctx.system.get_name());
+        log::debug!("actor on system {}", ctx.system.name());
         ctx.system.publish(TestEvent(format!("message received by '{}'", ctx.path)));
         "Ping!".to_string()
     }

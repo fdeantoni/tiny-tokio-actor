@@ -16,10 +16,13 @@ pub struct ActorSystem<E: SystemEvent> {
 
 impl<E: SystemEvent> ActorSystem<E> {
 
-    pub fn get_name(&self) -> &str {
+    /// The name given to this actor system
+    pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Publish an event on the actor system's event bus. These events can be
+    /// received by other actors in the same actor system.
     pub fn publish(&self, event: E) {
         self.bus.send(event).unwrap_or_else(|error| {
             log::error!("Failed to publish event! {}", error.to_string());
@@ -27,10 +30,13 @@ impl<E: SystemEvent> ActorSystem<E> {
         });
     }
 
+    /// Subscribe to events of this actor system.
     pub fn events(&self) -> EventConsumer<E> {
         self.bus.subscribe()
     }
 
+    /// Retrieves an actor running in this actor system. If actor does not exist, a None
+    /// is returned instead.
     pub async fn get_actor<A: Actor<E>>(&self, path: &ActorPath) -> Option<ActorRef<A, E>> {
         let actors = self.actors.read().await;
         actors.get(path).and_then(|any| {
@@ -44,7 +50,7 @@ impl<E: SystemEvent> ActorSystem<E> {
 
         let mut actors = self.actors.write().await;
         if actors.contains_key(&path) {
-            return Err(ActorError::Create( format!("Actor path '{}' already exists.", &path) ))
+            return Err(ActorError::Exists( path ))
         }
 
         let system = self.clone();
@@ -61,11 +67,14 @@ impl<E: SystemEvent> ActorSystem<E> {
         Ok(actor_ref)
     }
 
+    /// Launches a new top level actor on this actor system at the '/user' actor path. If another actor with
+    /// the same name already exists, an `Err(ActorError::Exists(ActorPath))` is returned instead.
     pub async fn create_actor<A: Actor<E>>(&self, name: &str, actor: A) -> Result<ActorRef<A, E>, ActorError> {
         let path = ActorPath::from("/user") / name;
         self.create_actor_path(path, actor).await
     }
 
+    /// Stops the actor on this actor system. All its children will also be stopped.
     pub async fn stop_actor(&self, path: &ActorPath) {
         log::debug!("Stopping actor '{}' on system '{}'...", &path, &self.name);
         let mut paths: Vec<ActorPath> = Vec::new();
@@ -85,6 +94,7 @@ impl<E: SystemEvent> ActorSystem<E> {
         }
     }
 
+    /// Creats a new actor system on which you can create actors.
     pub fn new(name: &str, bus: EventBus<E>) -> Self {
         let name = name.to_string();
         let actors = Arc::new(RwLock::new(HashMap::new()));
@@ -136,7 +146,7 @@ mod tests {
             log::debug!("received message! {:?}", &msg);
             self.counter += 1;
             log::debug!("counter is now {}", &self.counter);
-            log::debug!("{} on system {}", &ctx.path, ctx.system.get_name());
+            log::debug!("{} on system {}", &ctx.path, ctx.system.name());
             ctx.system.publish(TestEvent("Message received!".to_string()));
             self.counter
         }
@@ -174,7 +184,7 @@ mod tests {
             log::debug!("original message is {}", &self.message);
             self.message = msg.0;
             log::debug!("message is now {}", &self.message);
-            log::debug!("{} on system {}", &ctx.path, ctx.system.get_name());
+            log::debug!("{} on system {}", &ctx.path, ctx.system.name());
             ctx.system.publish(TestEvent("Received message!".to_string()));
             self.message.clone()
         }
