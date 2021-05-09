@@ -1,8 +1,7 @@
 # *Tiny Tokio Actor* #
 [![crates.io](https://buildstats.info/crate/tiny-tokio-actor)](https://crates.io/crates/tiny-tokio-actor) [![build](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml/badge.svg)](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml)
 
-Another actor library! Why another? I really like the actor model for development, and wanted something simple I could
-use on top of [tokio](https://github.com/tokio-rs/tokio).
+Another actor library! Why another? I really like the actor model for development, and wanted something simple I could use on top of [tokio](https://github.com/tokio-rs/tokio).
 
 ```toml
 [dependencies]
@@ -132,7 +131,8 @@ So basically this library provides:
 
 See the [docs](https://docs.rs/tiny-tokio-actor) and [integration tests](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/tests) for examples.
 
-There is still a lot to be done and the API will for sure change! The todo list so far:
+Library is still incubating! There is still a lot to be done and the API is still unstable! The
+todo list so far:
 * Supervisor hierarchy
 * Create macros to make the defining of actors a lot simpler
 
