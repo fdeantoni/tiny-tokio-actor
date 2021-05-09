@@ -1,31 +1,12 @@
-# *Tiny Tokio Actor* #
-[![crates.io](https://buildstats.info/crate/tiny-tokio-actor)](https://crates.io/crates/tiny-tokio-actor) [![build](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml/badge.svg)](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml)
-
-Another actor library! Why another? I really like the actor model for development, and wanted something simple I could
-use on top of [tokio](https://github.com/tokio-rs/tokio).
-
-```toml
-[dependencies]
-tiny-tokio-actor = "0.1"
-```
-
-Lets define an actor. First import the necessary crate:
-```rust
 use tiny_tokio_actor::*;
-```
 
-Next define the message we will be sending on the actor system's message bus:
-```rust
 // Define the system event bus message
 #[derive(Clone, Debug)]
 struct TestEvent(String);
 
 impl SystemEvent for TestEvent {}
-```
 
-Next define the actor struct. When implementing the `Actor` trait, you can override
-the default `pre_start()` and `post_stop()` methods:
-```rust
+// Define the actor
 #[derive(Clone)]
 struct TestActor {
     counter: usize
@@ -41,35 +22,26 @@ impl Actor<TestEvent> for TestActor {
         ctx.system.publish(TestEvent(format!("Actor '{}' stopped.", ctx.path)));
     }
 }
-```
 
-Next define a message you want the actor to handle. Note that you also define the
-response you expect back from the actor. If you do not want a resposne back you can
-simpy use `()` as response type.
-```rust
+// Define a message the actor will handle
 #[derive(Clone, Debug)]
 struct TestMessage(String);
 
 impl Message for TestMessage {
     type Response = String;
 }
-```
 
-Now implement the behaviour we want from the actor when we receive the message:
-```rust
+// What the actor should do with TestMessage
 #[async_trait]
 impl Handler<TestMessage, TestEvent> for TestActor {
     async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> String {
-        ctx.system.publish(TestEvent(format!("Message {} received by '{}'", &msg, ctx.path)));
+        ctx.system.publish(TestEvent(format!("Message {:?} received by '{}'", &msg, ctx.path)));
         self.counter += 1;
         "Ping!".to_string()
     }
 }
-```
 
-You can define more messages and behaviours you want the actor to handle. For example, lets
-define an `OtherMessage` we will let our actor handle:
-```rust
+// Define another message type the actor will handle
 #[derive(Clone, Debug)]
 struct OtherMessage(usize);
 
@@ -81,15 +53,12 @@ impl Message for OtherMessage {
 #[async_trait]
 impl Handler<OtherMessage, TestEvent> for TestActor {
     async fn handle(&mut self, msg: OtherMessage, ctx: &mut ActorContext<TestEvent>) -> usize {
-        ctx.system.publish(TestEvent(format!("Message {} received by '{}'", &msg, ctx.path)));
+        ctx.system.publish(TestEvent(format!("Message {:?} received by '{}'", &msg, ctx.path)));
         self.counter += msg.0;
         self.counter
     }
 }
-```
 
-We can now test out our actor and send the two message types to it:
-```rust
 #[tokio::test]
 async fn multi_message() {
     if std::env::var("RUST_LOG").is_err() {
@@ -123,20 +92,3 @@ async fn multi_message() {
     let response_b = actor_ref.ask(msg_b).await.unwrap();
     assert_eq!(response_b, 11);
 }
-```
-
-So basically this library provides:
-* An actor system with a message bus
-* A strongly typed actor with one or more message handlers
-* Actors referenced through ActorPaths and ActorRefs
-
-See the [docs](https://docs.rs/tiny-tokio-actor) and [integration tests](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/tests) for examples.
-
-There is still a lot to be done and the API will for sure change! The todo list so far:
-* Supervisor hierarchy
-* Create macros to make the defining of actors a lot simpler
-
-Projects / blog posts that are worth checking out:
-* [Coerce-rs](https://github.com/LeonHartley/Coerce-rs)
-* [Actors with Tokio](https://ryhl.io/blog/actors-with-tokio/)
-* [Unbounded channel deadlock risk](https://www.reddit.com/r/rust/comments/ljx7mc/actors_with_tokio)
