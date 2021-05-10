@@ -5,7 +5,7 @@ Another actor library! Why another? I really like the actor model for developmen
 
 ```toml
 [dependencies]
-tiny-tokio-actor = "0.1"
+tiny-tokio-actor = "0.2"
 ```
 
 Lets define an actor. First import the necessary crate:
