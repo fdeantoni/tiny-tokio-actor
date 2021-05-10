@@ -2,15 +2,15 @@ use crate::system::{ActorSystem, SystemEvent};
 
 use super::{Actor, ActorContext, ActorRef, ActorPath, handler::{ActorMailbox, MailboxReceiver}};
 
-pub(crate) struct ActorRunner<A: Actor<E>, E: SystemEvent> {
+pub(crate) struct ActorRunner<E: SystemEvent, A: Actor<E>> {
     path: ActorPath,
     actor: A,
-    receiver: MailboxReceiver<A, E>,
+    receiver: MailboxReceiver<E, A>,
 }
 
-impl<A: Actor<E>, E: SystemEvent> ActorRunner<A, E> {
+impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
 
-    pub fn create(path: ActorPath, actor: A) -> (Self, ActorRef<A, E>) {
+    pub fn create(path: ActorPath, actor: A) -> (Self, ActorRef<E, A>) {
         let (sender, receiver) = ActorMailbox::create();
         let actor_ref = ActorRef::new(path.clone(), sender);
         let runner = ActorRunner {

@@ -8,16 +8,16 @@ use crate::{actor::{ActorContext, Handler, Message}, system::SystemEvent};
 use super::{Actor, ActorError};
 
 #[async_trait]
-pub trait MessageHandler<A: Actor<E>, E: SystemEvent>: Send + Sync {
+pub trait MessageHandler<E: SystemEvent, A: Actor<E>>: Send + Sync {
 
     async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>);
 }
 
-struct ActorMessage<M, A, E>
+struct ActorMessage<M, E, A>
 where
     M: Message,
     E: SystemEvent,
-    A: Actor<E> + Handler<M, E>,
+    A: Actor<E> + Handler<E, M>,
 {
     payload: M,
     rsvp: Option<oneshot::Sender<M::Response>>,
@@ -26,22 +26,22 @@ where
 }
 
 #[async_trait]
-impl<M, A, E> MessageHandler<A, E> for ActorMessage<M, A, E>
+impl<M, E, A> MessageHandler<E, A> for ActorMessage<M, E, A>
 where
     M: Message,
     E: SystemEvent,
-    A: Actor<E> + Handler<M, E>,
+    A: Actor<E> + Handler<E, M>,
 {
     async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
         self.process(actor, ctx).await
     }
 }
 
-impl<M, A, E> ActorMessage<M, A, E>
+impl<M, E, A> ActorMessage<M, E, A>
 where
     M: Message,
     E: SystemEvent,
-    A: Actor<E> + Handler<M, E>,
+    A: Actor<E> + Handler<E, M>,
 {
 
     async fn process(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
@@ -65,31 +65,31 @@ where
     }
 }
 
-pub type MailboxReceiver<A, E> = mpsc::UnboundedReceiver<BoxedMessageHandler<A, E>>;
-pub type MailboxSender<A, E> = mpsc::UnboundedSender<BoxedMessageHandler<A, E>>;
+pub type MailboxReceiver<E, A> = mpsc::UnboundedReceiver<BoxedMessageHandler<E, A>>;
+pub type MailboxSender<E, A> = mpsc::UnboundedSender<BoxedMessageHandler<E, A>>;
 
-pub struct ActorMailbox<A: Actor<E>, E: SystemEvent> {
+pub struct ActorMailbox<E: SystemEvent, A: Actor<E>> {
     _phantom_actor: PhantomData<A>,
     _phantom_event: PhantomData<E>
 }
 
-impl<A: Actor<E>, E: SystemEvent> ActorMailbox<A, E> {
+impl<E: SystemEvent, A: Actor<E>> ActorMailbox<E, A> {
 
-    pub fn create() -> (MailboxSender<A, E>, MailboxReceiver<A, E>) {
+    pub fn create() -> (MailboxSender<E, A>, MailboxReceiver<E, A>) {
         mpsc::unbounded_channel()
     }
 }
 
-pub type BoxedMessageHandler<A, E> = Box<dyn MessageHandler<A, E>>;
+pub type BoxedMessageHandler<E, A> = Box<dyn MessageHandler<E, A>>;
 
 #[derive(Clone)]
-pub struct HandlerRef<A: Actor<E>, E: SystemEvent> {
-    sender: mpsc::UnboundedSender<BoxedMessageHandler<A, E>>
+pub struct HandlerRef<E: SystemEvent, A: Actor<E>> {
+    sender: mpsc::UnboundedSender<BoxedMessageHandler<E, A>>
 }
 
-impl<A: Actor<E>, E: SystemEvent> HandlerRef<A, E> {
+impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
 
-    pub(crate) fn new(sender: mpsc::UnboundedSender<BoxedMessageHandler<A, E>>) -> Self {
+    pub(crate) fn new(sender: mpsc::UnboundedSender<BoxedMessageHandler<E, A>>) -> Self {
         HandlerRef {
             sender
         }
@@ -98,9 +98,9 @@ impl<A: Actor<E>, E: SystemEvent> HandlerRef<A, E> {
     pub fn tell<M>(&mut self, msg: M) -> Result<(), ActorError>
     where
         M: Message,
-        A: Handler<M, E>
+        A: Handler<E, M>
     {
-        let message = ActorMessage::<M, A, E>::new(msg, None);
+        let message = ActorMessage::<M, E, A>::new(msg, None);
         if let Err(error) = self.sender.send(Box::new(message)) {
             log::error!("Failed to tell message! {}", error.to_string());
             Err(ActorError::Runtime(error.to_string()))
@@ -112,10 +112,10 @@ impl<A: Actor<E>, E: SystemEvent> HandlerRef<A, E> {
     pub async fn ask<M>(&mut self, msg: M) -> Result<M::Response, ActorError>
     where
         M: Message,
-        A: Handler<M, E>
+        A: Handler<E, M>
     {
         let (response_sender, response_receiver) = oneshot::channel();
-        let message = ActorMessage::<M, A, E>::new(msg, Some(response_sender));
+        let message = ActorMessage::<M, E, A>::new(msg, Some(response_sender));
         if let Err(error) = self.sender.send(Box::new(message)) {
             log::error!("Failed to ask message! {}", error.to_string());
             Err(ActorError::Runtime(error.to_string()))
@@ -170,7 +170,7 @@ mod tests {
 
         let mut actor = MyActor { counter: 0 };
         let msg = MyMessage("Hello World!".to_string());
-        let (sender, mut receiver): (MailboxSender<MyActor, MyMessage>, MailboxReceiver<MyActor, MyMessage>) = ActorMailbox::create();
+        let (sender, mut receiver): (MailboxSender<MyMessage, MyActor>, MailboxReceiver<MyMessage, MyActor>) = ActorMailbox::create();
         let mut actor_ref = HandlerRef {
             sender
         };
@@ -199,7 +199,7 @@ mod tests {
 
         let mut actor = MyActor { counter: 0 };
         let msg = MyMessage("Hello World!".to_string());
-        let (sender, mut receiver): (MailboxSender<MyActor, MyMessage>, MailboxReceiver<MyActor, MyMessage>) = ActorMailbox::create();
+        let (sender, mut receiver): (MailboxSender<MyMessage, MyActor>, MailboxReceiver<MyMessage, MyActor>) = ActorMailbox::create();
         let mut actor_ref = HandlerRef {
             sender
         };

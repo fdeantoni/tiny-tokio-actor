@@ -41,7 +41,7 @@ impl Message for PongMessage {
 }
 
 #[async_trait]
-impl Handler<PingMessage, EventMessage> for PingActor {
+impl Handler<EventMessage, PingMessage> for PingActor {
     async fn handle(&mut self, msg: PingMessage, ctx: &mut ActorContext<EventMessage>) -> PongMessage {
         if let PingMessage::Start(message) = msg {
             let limit = message.limit;
@@ -60,7 +60,7 @@ impl Handler<PingMessage, EventMessage> for PingActor {
 }
 
 #[async_trait]
-impl Handler<PingMessage, EventMessage> for PongActor {
+impl Handler<EventMessage, PingMessage> for PongActor {
     async fn handle(&mut self, msg: PingMessage, _ctx: &mut ActorContext<EventMessage>) -> PongMessage {
         if let PingMessage::Ping(counter) = msg {
             PongMessage(counter + 1)

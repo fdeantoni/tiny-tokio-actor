@@ -36,7 +36,7 @@ impl Message for TestMessage {
 // to annotate the implementation with the `async_trait` macro (a
 // re-export of the async-trait crate).
 #[async_trait]
-impl Handler<TestMessage, TestEvent> for TestActor {
+impl Handler<TestEvent, TestMessage> for TestActor {
     async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> String {
         log::debug!("received message! {:?}", &msg);
         self.counter += 1;

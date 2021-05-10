@@ -40,14 +40,14 @@ impl<E: SystemEvent> ActorSystem<E> {
 
     /// Retrieves an actor running in this actor system. If actor does not exist, a None
     /// is returned instead.
-    pub async fn get_actor<A: Actor<E>>(&self, path: &ActorPath) -> Option<ActorRef<A, E>> {
+    pub async fn get_actor<A: Actor<E>>(&self, path: &ActorPath) -> Option<ActorRef<E, A>> {
         let actors = self.actors.read().await;
         actors.get(path).and_then(|any| {
-            any.downcast_ref::<ActorRef<A, E>>().cloned()
+            any.downcast_ref::<ActorRef<E, A>>().cloned()
         })
     }
 
-    pub(crate) async fn create_actor_path<A: Actor<E>>(&self, path: ActorPath, actor: A) -> Result<ActorRef<A, E>, ActorError> {
+    pub(crate) async fn create_actor_path<A: Actor<E>>(&self, path: ActorPath, actor: A) -> Result<ActorRef<E, A>, ActorError> {
 
         log::debug!("Creating actor '{}' on system '{}'...", &path, &self.name);
 
@@ -72,7 +72,7 @@ impl<E: SystemEvent> ActorSystem<E> {
 
     /// Launches a new top level actor on this actor system at the '/user' actor path. If another actor with
     /// the same name already exists, an `Err(ActorError::Exists(ActorPath))` is returned instead.
-    pub async fn create_actor<A: Actor<E>>(&self, name: &str, actor: A) -> Result<ActorRef<A, E>, ActorError> {
+    pub async fn create_actor<A: Actor<E>>(&self, name: &str, actor: A) -> Result<ActorRef<E, A>, ActorError> {
         let path = ActorPath::from("/user") / name;
         self.create_actor_path(path, actor).await
     }
@@ -144,7 +144,7 @@ mod tests {
     impl SystemEvent for TestMessage {}
 
     #[async_trait]
-    impl Handler<TestMessage, TestEvent> for TestActor {
+    impl Handler<TestEvent, TestMessage> for TestActor {
         async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> usize {
             log::debug!("received message! {:?}", &msg);
             self.counter += 1;
@@ -158,7 +158,7 @@ mod tests {
     #[derive(Clone)]
     struct OtherActor {
         message: String,
-        child: Option<ActorRef<TestActor, TestEvent>>
+        child: Option<ActorRef<TestEvent, TestActor>>
     }
 
     #[async_trait]
@@ -181,7 +181,7 @@ mod tests {
     }
 
     #[async_trait]
-    impl Handler<OtherMessage, TestEvent> for OtherActor {
+    impl Handler<TestEvent, OtherMessage> for OtherActor {
         async fn handle(&mut self, msg: OtherMessage, ctx: &mut ActorContext<TestEvent>) -> String {
             log::debug!("OtherActor received message! {:?}", &msg);
             log::debug!("original message is {}", &self.message);

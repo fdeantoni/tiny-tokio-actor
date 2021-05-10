@@ -19,13 +19,13 @@ pub struct ActorContext<E: SystemEvent> {
 impl<E: SystemEvent> ActorContext<E> {
 
     /// Create a child actor under this actor.
-    pub async fn create_child<A: Actor<E>>(&self, name: &str, actor: A) -> Result<ActorRef<A, E>, ActorError> {
+    pub async fn create_child<A: Actor<E>>(&self, name: &str, actor: A) -> Result<ActorRef<E, A>, ActorError> {
         let path = self.path.clone() / name;
         self.system.create_actor_path(path, actor).await
     }
 
     /// Retrieve a child actor running under this actor.
-    pub async fn get_child<A: Actor<E>>(&self, name: &str) -> Option<ActorRef<A, E>> {
+    pub async fn get_child<A: Actor<E>>(&self, name: &str) -> Option<ActorRef<E, A>> {
         let path = self.path.clone() / name;
         self.system.get_actor(&path).await
     }
@@ -40,7 +40,7 @@ pub trait Message: Clone + Send + Sync + 'static {
 
 /// Defines what the actor does with a message.
 #[async_trait]
-pub trait Handler<M: Message, E: SystemEvent>: Send + Sync {
+pub trait Handler<E: SystemEvent, M: Message>: Send + Sync {
     async fn handle(&mut self, msg: M, ctx: &mut ActorContext<E>) -> M::Response;
 }
 
@@ -59,12 +59,12 @@ pub trait Actor<E: SystemEvent>: Clone + Send + Sync + 'static {
 /// A clonable actor reference. It basically holds a Sender that can send messages
 /// to the mailbox (receiver) of the actor.
 #[derive(Clone)]
-pub struct ActorRef<A: Actor<E>, E: SystemEvent> {
+pub struct ActorRef<E: SystemEvent, A: Actor<E>> {
     path: ActorPath,
-    sender: handler::HandlerRef<A, E>
+    sender: handler::HandlerRef<E, A>
 }
 
-impl<A: Actor<E>, E: SystemEvent> ActorRef<A, E> {
+impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
 
     /// Get the path of this actor
     pub fn get_path(&self) -> &ActorPath {
@@ -75,7 +75,7 @@ impl<A: Actor<E>, E: SystemEvent> ActorRef<A, E> {
     pub fn tell<M>(&mut self, msg: M) -> Result<(), ActorError>
     where
         M: Message,
-        A: Handler<M, E>
+        A: Handler<E, M>
     {
         self.sender.tell(msg)
     }
@@ -84,12 +84,12 @@ impl<A: Actor<E>, E: SystemEvent> ActorRef<A, E> {
     pub async fn ask<M>(&mut self, msg: M) -> Result<M::Response, ActorError>
     where
         M: Message,
-        A: Handler<M, E>
+        A: Handler<E, M>
     {
         self.sender.ask(msg).await
     }
 
-    pub(crate) fn new(path: ActorPath, sender: handler::MailboxSender<A, E>) -> Self {
+    pub(crate) fn new(path: ActorPath, sender: handler::MailboxSender<E, A>) -> Self {
         let handler = handler::HandlerRef::new(sender);
         ActorRef {
             path,
@@ -98,7 +98,7 @@ impl<A: Actor<E>, E: SystemEvent> ActorRef<A, E> {
     }
 }
 
-impl<A: Actor<E>, E: SystemEvent> std::fmt::Debug for ActorRef<A, E> {
+impl<E: SystemEvent, A: Actor<E>> std::fmt::Debug for ActorRef<E, A> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path)
     }
