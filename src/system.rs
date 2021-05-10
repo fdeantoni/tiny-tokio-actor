@@ -25,7 +25,10 @@ impl<E: SystemEvent> ActorSystem<E> {
     /// received by other actors in the same actor system.
     pub fn publish(&self, event: E) {
         self.bus.send(event).unwrap_or_else(|error| {
-            log::error!("Failed to publish event! {}", error.to_string());
+            log::warn!(
+                "No listeners active on event bus. Dropping event: {:?}",
+                &error.to_string(),
+            );
             0
         });
     }
