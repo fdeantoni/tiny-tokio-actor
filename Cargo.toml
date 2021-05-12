@@ -1,6 +1,6 @@
 [package]
 name = "tiny-tokio-actor"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2018"
 authors = ["fdeantoni <fdeantoni@gmail.com>"]
 license = "Apache-2.0"

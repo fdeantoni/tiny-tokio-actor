@@ -41,7 +41,7 @@ impl ActorPath {
     pub fn at_level(&self, level: usize) -> Self {
         if level < 1 || level >= self.level() {
             self.clone()
-        } else if self.is_root() {
+        } else if self.is_top_level() {
             self.root()
         } else if level == self.level() - 1 {
             self.parent()
@@ -53,13 +53,13 @@ impl ActorPath {
     }
 
     pub fn is_ancestor_of(&self, other: &ActorPath) -> bool {
-        let me = self.to_string();
+        let me = format!("{}/", self.to_string());
         other.to_string().as_str().starts_with(me.as_str())
     }
 
     pub fn is_descendant_of(&self, other: &ActorPath) -> bool {
         let me = self.to_string();
-        me.as_str().starts_with(other.to_string().as_str())
+        me.as_str().starts_with(format!("{}/", other).as_str())
     }
 
     pub fn is_parent_of(&self, other: &ActorPath) -> bool {
@@ -70,7 +70,7 @@ impl ActorPath {
         self.parent() == *other
     }
 
-    pub fn is_root(&self) -> bool {
+    pub fn is_top_level(&self) -> bool {
         self.0.len() == 1
     }
 }
@@ -230,6 +230,22 @@ mod tests {
     }
 
     #[test]
+    fn test_if_descendant() {
+        let path = ActorPath::from("/acme/building/room/sensor");
+        let parent = path.parent();
+        assert!(path.is_descendant_of(&parent));
+        assert!(!path.is_descendant_of(&path));
+    }
+
+    #[test]
+    fn test_if_ancestor() {
+        let path = ActorPath::from("/acme/building/room/sensor");
+        let parent = path.parent();
+        assert!(parent.is_ancestor_of(&path));
+        assert!(!path.is_ancestor_of(&path));
+    }
+
+    #[test]
     fn test_if_ancestor_descendant() {
         let path = ActorPath::from("/acme/building/room/sensor");
         let root = path.root();
@@ -243,8 +259,8 @@ mod tests {
         let root = path.root();
         println!("{:?}", path);
         println!("{:?}", root);
-        assert!(root.is_root());
-        assert!(!path.is_root());
+        assert!(root.is_top_level());
+        assert!(!path.is_top_level());
     }
 
     #[test]

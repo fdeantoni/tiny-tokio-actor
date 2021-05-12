@@ -80,12 +80,12 @@ impl<E: SystemEvent> ActorSystem<E> {
     /// Stops the actor on this actor system. All its children will also be stopped.
     pub async fn stop_actor(&self, path: &ActorPath) {
         log::debug!("Stopping actor '{}' on system '{}'...", &path, &self.name);
-        let mut paths: Vec<ActorPath> = Vec::new();
+        let mut paths: Vec<ActorPath> = vec![path.clone()];
         {
-            let current_actors = self.actors.read().await;
-            for child in current_actors.keys() {
-                if child.is_descendant_of(path) {
-                    paths.push(child.clone());
+            let running_actors = self.actors.read().await;
+            for running in running_actors.keys() {
+                if running.is_descendant_of(path) {
+                    paths.push(running.clone());
                 }
             }
         }
