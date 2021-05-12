@@ -77,6 +77,23 @@ impl<E: SystemEvent> ActorSystem<E> {
         self.create_actor_path(path, actor).await
     }
 
+    /// Retrieve or create a new actor on this actor system if it does not exist yet. 
+    pub async fn get_or_create_actor<A: Actor<E>>(&self, name: &str, actor_fn: fn() -> A) -> Result<ActorRef<E, A>, ActorError> {
+        let path = ActorPath::from("/user") / name;
+        self.get_or_create_actor_path(&path, actor_fn).await
+    }
+
+    pub(crate) async fn get_or_create_actor_path<A: Actor<E>>(&self, path: &ActorPath, actor_fn: fn() -> A) -> Result<ActorRef<E, A>, ActorError> {
+        let actors = self.actors.read().await;
+        match self.get_actor(path).await {
+            Some(actor) => Ok(actor),
+            None => {
+                drop(actors);
+                self.create_actor_path(path.clone(), actor_fn()).await
+            }
+        }
+    }
+
     /// Stops the actor on this actor system. All its children will also be stopped.
     pub async fn stop_actor(&self, path: &ActorPath) {
         log::debug!("Stopping actor '{}' on system '{}'...", &path, &self.name);
@@ -206,6 +223,24 @@ mod tests {
         let bus = EventBus::<TestEvent>::new(1000);
         let system = ActorSystem::new("test", bus);
         let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
+        let result = actor_ref.ask(msg).await.unwrap();
+
+        assert_eq!(result, 1);
+    }
+
+    #[tokio::test]
+    async fn actor_get_or_create() {
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "trace");
+        }
+        let _ = env_logger::builder().is_test(true).try_init();
+
+        let msg = TestMessage(10);
+
+        let bus = EventBus::<TestEvent>::new(1000);
+        let system = ActorSystem::new("test", bus);
+
+        let mut actor_ref = system.get_or_create_actor("test-actor", || TestActor { counter: 0 } ).await.unwrap();
         let result = actor_ref.ask(msg).await.unwrap();
 
         assert_eq!(result, 1);
