@@ -39,6 +39,12 @@ impl<E: SystemEvent> ActorContext<E> {
         let path = self.path.clone() / name;
         self.system.get_or_create_actor_path(&path, actor_fn).await
     }
+
+    /// Stops the child actor
+    pub async fn stop_child(&self, name: &str) {
+        let path = self.path.clone() / name;
+        self.system.stop_actor(&path).await;
+    }
 }
 
 /// Defines what an actor will receive as its message, and with what it should respond.
