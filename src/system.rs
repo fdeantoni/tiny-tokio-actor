@@ -77,13 +77,21 @@ impl<E: SystemEvent> ActorSystem<E> {
         self.create_actor_path(path, actor).await
     }
 
-    /// Retrieve or create a new actor on this actor system if it does not exist yet. 
-    pub async fn get_or_create_actor<A: Actor<E>>(&self, name: &str, actor_fn: fn() -> A) -> Result<ActorRef<E, A>, ActorError> {
+    /// Retrieve or create a new actor on this actor system if it does not exist yet.
+    pub async fn get_or_create_actor<A, F>(&self, name: &str, actor_fn: F) -> Result<ActorRef<E, A>, ActorError>
+    where
+        A: Actor<E>,
+        F: FnOnce() -> A
+    {
         let path = ActorPath::from("/user") / name;
         self.get_or_create_actor_path(&path, actor_fn).await
     }
 
-    pub(crate) async fn get_or_create_actor_path<A: Actor<E>>(&self, path: &ActorPath, actor_fn: fn() -> A) -> Result<ActorRef<E, A>, ActorError> {
+    pub(crate) async fn get_or_create_actor_path<A, F>(&self, path: &ActorPath, actor_fn: F) -> Result<ActorRef<E, A>, ActorError>
+    where
+        A: Actor<E>,
+        F: FnOnce() -> A
+    {
         let actors = self.actors.read().await;
         match self.get_actor(path).await {
             Some(actor) => Ok(actor),
@@ -181,6 +189,7 @@ mod tests {
     #[async_trait]
     impl Actor<TestEvent> for OtherActor {
         async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) {
+            log::debug!("OtherActor initial message: {}", &self.message);
             let child = TestActor { counter: 0 };
             self.child = ctx.create_child("child", child).await.ok();
         }
@@ -235,15 +244,17 @@ mod tests {
         }
         let _ = env_logger::builder().is_test(true).try_init();
 
-        let msg = TestMessage(10);
-
         let bus = EventBus::<TestEvent>::new(1000);
         let system = ActorSystem::new("test", bus);
 
-        let mut actor_ref = system.get_or_create_actor("test-actor", || TestActor { counter: 0 } ).await.unwrap();
+        let initial_message = "hello world!".to_string();
+        let actor_fn = || OtherActor { message: initial_message, child: None };
+        let mut actor_ref = system.get_or_create_actor("test-actor", actor_fn ).await.unwrap();
+
+        let msg = OtherMessage("Updated message.".to_string());
         let result = actor_ref.ask(msg).await.unwrap();
 
-        assert_eq!(result, 1);
+        assert_eq!(result, "Updated message.".to_string());
     }
 
     #[tokio::test]

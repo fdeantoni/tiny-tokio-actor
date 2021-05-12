@@ -31,7 +31,11 @@ impl<E: SystemEvent> ActorContext<E> {
     }
 
     /// Retrieve or create a new child under this actor if it does not exist yet
-    pub async fn get_or_create_child<A: Actor<E>>(&self, name: &str, actor_fn: fn() -> A) -> Result<ActorRef<E, A>, ActorError> {
+    pub async fn get_or_create_child<A, F>(&self, name: &str, actor_fn: F) -> Result<ActorRef<E, A>, ActorError>
+    where
+        A: Actor<E>,
+        F: FnOnce() -> A
+    {
         let path = self.path.clone() / name;
         self.system.get_or_create_actor_path(&path, actor_fn).await
     }
