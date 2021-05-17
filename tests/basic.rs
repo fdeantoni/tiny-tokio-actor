@@ -67,7 +67,7 @@ async fn simple_message() {
     let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
 
     // Listen for events on the system event bus
-    let mut events = system.events();
+    let mut events: EventReceiver<TestEvent> = system.events();
     tokio::spawn(async move {
         loop {
             match events.recv().await {

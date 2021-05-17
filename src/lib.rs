@@ -70,7 +70,7 @@
 //!     let mut actor_ref = system.create_actor("test-actor", actor).await?;
 //!
 //!     // Listen for events on the system event bus
-//!     let mut events = system.events();
+//!     let mut events: EventReceiver<TestEvent> = system.events();
 //!     tokio::spawn(async move {
 //!         loop {
 //!             match events.recv().await {
@@ -96,7 +96,7 @@ mod bus;
 mod system;
 
 pub use actor::{Actor, ActorRef, ActorPath, ActorError, ActorContext, Handler, Message};
-pub use bus::EventBus;
+pub use bus::{EventBus, EventReceiver};
 pub use system::{ActorSystem, SystemEvent};
 
 pub use async_trait::async_trait;

@@ -2,7 +2,7 @@ use std::{any::Any, collections::HashMap, sync::Arc};
 
 use tokio::sync::RwLock;
 
-use crate::{ActorError, ActorPath, actor::{Actor, ActorRef, runner::ActorRunner}, bus::{EventBus, EventConsumer}};
+use crate::{ActorError, ActorPath, actor::{Actor, ActorRef, runner::ActorRunner}, bus::{EventBus, EventReceiver}};
 
 /// Events that this actor system will send
 pub trait SystemEvent: Clone + Send + Sync + 'static {}
@@ -34,7 +34,7 @@ impl<E: SystemEvent> ActorSystem<E> {
     }
 
     /// Subscribe to events of this actor system.
-    pub fn events(&self) -> EventConsumer<E> {
+    pub fn events(&self) -> EventReceiver<E> {
         self.bus.subscribe()
     }
 

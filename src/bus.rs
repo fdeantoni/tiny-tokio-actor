@@ -3,16 +3,16 @@ pub use tokio::sync::broadcast::error::SendError;
 use tokio::sync::broadcast::{Receiver as BroadcastReceiver, Sender as BroadcastSender};
 use tokio::sync::broadcast;
 
-pub type EventConsumer<T> = BroadcastReceiver<T>;
-pub(crate) type EventProducer<T> = BroadcastSender<T>;
+pub type EventReceiver<T> = BroadcastReceiver<T>;
+pub(crate) type EventSender<T> = BroadcastSender<T>;
 
 #[derive(Clone)]
 pub struct EventBus<T: Clone> {
-    tx: EventProducer<T>,
+    tx: EventSender<T>,
 }
 
 impl<T: Clone> EventBus<T> {
-    pub fn subscribe(&self) -> EventConsumer<T> {
+    pub fn subscribe(&self) -> EventReceiver<T> {
         self.tx.subscribe()
     }
 
