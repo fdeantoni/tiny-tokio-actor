@@ -129,7 +129,7 @@ So basically this library provides:
 * A strongly typed actor with one or more message handlers
 * Actors referenced through ActorPaths and ActorRefs
 
-See the [docs](https://docs.rs/tiny-tokio-actor) and [integration tests](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/tests) for examples.
+See the [docs](https://docs.rs/tiny-tokio-actor), [examples](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/examples), and [integration tests](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/tests) for more detailed examples.
 
 Library is still incubating! There is still a lot to be done and the API is still unstable! The
 todo list so far:
