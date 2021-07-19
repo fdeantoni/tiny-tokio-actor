@@ -83,6 +83,12 @@ pub struct ActorRef<E: SystemEvent, A: Actor<E>> {
 impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
 
     /// Get the path of this actor
+    pub fn path(&self) -> &ActorPath {
+        &self.path
+    }
+
+    /// Get the path of this actor
+    #[deprecated(since="0.2.3", note="please use `path` instead")]
     pub fn get_path(&self) -> &ActorPath {
         &self.path
     }

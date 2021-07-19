@@ -62,7 +62,7 @@ impl<E: SystemEvent> ActorSystem<E> {
             runner.start(system).await;
         });
 
-        let path = actor_ref.get_path().clone();
+        let path = actor_ref.path().clone();
         let any = Box::new(actor_ref.clone());
 
         actors.insert(path, any);
@@ -276,7 +276,7 @@ mod tests {
 
             assert_eq!(result, 1);
 
-            system.stop_actor(actor_ref.get_path()).await;
+            system.stop_actor(actor_ref.path()).await;
         }
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
@@ -326,7 +326,7 @@ mod tests {
         let system = ActorSystem::new("test", bus);
         let original = system.create_actor("test-actor", actor).await.unwrap();
 
-        if let Some(mut actor_ref) = system.get_actor::<TestActor>(original.get_path()).await {
+        if let Some(mut actor_ref) = system.get_actor::<TestActor>(original.path()).await {
             let msg = TestMessage(10);
             let result = actor_ref.ask(msg).await.unwrap();
             assert_eq!(result, 1);
@@ -334,7 +334,7 @@ mod tests {
             panic!("It should have retrieved the actor!")
         }
 
-        if let Some(mut actor_ref) = system.get_actor::<OtherActor>(original.get_path()).await {
+        if let Some(mut actor_ref) = system.get_actor::<OtherActor>(original.path()).await {
             let msg = OtherMessage("Hello world!".to_string());
             let result = actor_ref.ask(msg).await.unwrap();
             println!("Result is: {}", result);
@@ -366,7 +366,7 @@ mod tests {
             assert_eq!(result, "new message!".to_string());
 
             tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
-            system.stop_actor(actor_ref.get_path()).await;
+            system.stop_actor(actor_ref.path()).await;
         }
 
         tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;

@@ -86,7 +86,7 @@ async fn test_ping_pong() {
     let pong_ref = system.create_actor("pong", pong).await.unwrap();
 
     let start = StartMessage {
-        destination: pong_ref.get_path().clone(),
+        destination: pong_ref.path().clone(),
         limit: 5
     };
 

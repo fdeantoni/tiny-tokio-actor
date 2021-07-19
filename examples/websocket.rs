@@ -6,6 +6,7 @@ use tokio::task;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
+use uuid::Uuid;
 use warp::*;
 use warp::ws::WebSocket;
 
@@ -42,10 +43,7 @@ async fn main() {
         .and(warp::addr::remote())
         .and(warp::ws())
         .map(|system: ActorSystem<ServerEvent>, remote: Option<SocketAddr>, ws: warp::ws::Ws| {
-            let client_addr = remote
-                .map(|addr| addr.to_string())
-                .unwrap_or_else(|| "?".to_string());
-            ws.on_upgrade(|websocket| start_echo(system, client_addr, websocket) )
+            ws.on_upgrade(move |websocket| start_echo(system, remote, websocket) )
         });
 
     // Create the warp routes (websocket only in this case, with warp logging added)
@@ -56,7 +54,7 @@ async fn main() {
 }
 
 // Starts a new echo actor on our actor system
-async fn start_echo(system: ActorSystem<ServerEvent>, addr: String, websocket: WebSocket) {
+async fn start_echo(system: ActorSystem<ServerEvent>, remote: Option<SocketAddr>, websocket: WebSocket) {
 
     // Split out the websocket into incoming and outgoing
     let (ws_out, mut ws_in) = websocket.split();
@@ -69,6 +67,9 @@ async fn start_echo(system: ActorSystem<ServerEvent>, addr: String, websocket: W
     // Create a new echo actor with the newly created sender
     let actor = EchoActor::new(sender);
     // Use the websocket client address to generate a unique actor name
+    let addr = remote
+        .map(|addr| addr.to_string())
+        .unwrap_or_else(|| Uuid::new_v4().to_string() );
     let actor_name = format!("echo-actor-{}", &addr);
     // Launch the actor on our actor system
     let mut actor_ref = system.create_actor(&actor_name, actor).await.unwrap();
@@ -86,7 +87,7 @@ async fn start_echo(system: ActorSystem<ServerEvent>, addr: String, websocket: W
     }
 
     // The loop has been broken, kill the echo actor
-    system.stop_actor(actor_ref.get_path()).await;
+    system.stop_actor(actor_ref.path()).await;
 }
 
 #[derive(Clone)]
@@ -105,7 +106,7 @@ impl EchoActor {
 impl Actor<ServerEvent> for EchoActor {}
 
 #[derive(Clone, Debug)]
-struct EchoRequest(pub warp::ws::Message);
+struct EchoRequest(warp::ws::Message);
 
 impl Message for EchoRequest {
     type Response = ();
