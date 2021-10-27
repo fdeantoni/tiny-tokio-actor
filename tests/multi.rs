@@ -14,8 +14,9 @@ struct TestActor {
 
 #[async_trait]
 impl Actor<TestEvent> for TestActor {
-    async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) {
+    async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
         ctx.system.publish(TestEvent(format!("Actor '{}' started.", ctx.path)));
+        Ok(())
     }
 
     async fn post_stop(&mut self, ctx: &mut ActorContext<TestEvent>) {
@@ -42,7 +43,7 @@ impl Handler<TestEvent, TestMessage> for TestActor {
 }
 
 // Define another message type the actor will handle
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 struct OtherMessage(usize);
 
 impl Message for OtherMessage {

@@ -103,7 +103,7 @@ impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
         let message = ActorMessage::<M, E, A>::new(msg, None);
         if let Err(error) = self.sender.send(Box::new(message)) {
             log::error!("Failed to tell message! {}", error.to_string());
-            Err(ActorError::Runtime(error.to_string()))
+            Err(ActorError::SendError(error.to_string()))
         } else {
             Ok(())
         }
@@ -118,12 +118,16 @@ impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
         let message = ActorMessage::<M, E, A>::new(msg, Some(response_sender));
         if let Err(error) = self.sender.send(Box::new(message)) {
             log::error!("Failed to ask message! {}", error.to_string());
-            Err(ActorError::Runtime(error.to_string()))
+            Err(ActorError::SendError(error.to_string()))
         } else {
             response_receiver.await.map_err(|error| {
-                ActorError::Runtime(error.to_string())
+                ActorError::SendError(error.to_string())
             })
         }
+    }
+
+    pub fn is_closed(&self) -> bool {
+        self.sender.is_closed()
     }
 }
 
@@ -134,7 +138,7 @@ mod tests {
 
     use super::*;
 
-    #[derive(Clone)]
+    #[derive(Default, Clone)]
     struct MyActor {
         counter: usize
     }

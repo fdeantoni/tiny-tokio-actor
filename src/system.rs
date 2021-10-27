@@ -81,7 +81,7 @@ impl<E: SystemEvent> ActorSystem<E> {
     pub async fn get_or_create_actor<A, F>(&self, name: &str, actor_fn: F) -> Result<ActorRef<E, A>, ActorError>
     where
         A: Actor<E>,
-        F: FnOnce() -> A
+        F: FnOnce() -> A,
     {
         let path = ActorPath::from("/user") / name;
         self.get_or_create_actor_path(&path, actor_fn).await
@@ -90,7 +90,7 @@ impl<E: SystemEvent> ActorSystem<E> {
     pub(crate) async fn get_or_create_actor_path<A, F>(&self, path: &ActorPath, actor_fn: F) -> Result<ActorRef<E, A>, ActorError>
     where
         A: Actor<E>,
-        F: FnOnce() -> A
+        F: FnOnce() -> A,
     {
         let actors = self.actors.read().await;
         match self.get_actor(path).await {
@@ -135,6 +135,7 @@ mod tests {
 
     use async_trait::async_trait;
     use crate::actor::{Actor, ActorContext, Handler, Message};
+    use thiserror::Error;
 
     use super::*;
 
@@ -143,15 +144,16 @@ mod tests {
 
     impl SystemEvent for TestEvent {}
 
-    #[derive(Clone)]
+    #[derive(Default, Clone)]
     struct TestActor {
         counter: usize
     }
 
     #[async_trait]
     impl Actor<TestEvent> for TestActor {
-        async fn pre_start(&mut self, _ctx: &mut ActorContext<TestEvent>) {
+        async fn pre_start(&mut self, _ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
             log::debug!("Starting actor TestActor!");
+            Ok(())
         }
 
         async fn post_stop(&mut self, _ctx: &mut ActorContext<TestEvent>) {
@@ -180,7 +182,7 @@ mod tests {
         }
     }
 
-    #[derive(Clone)]
+    #[derive(Default, Clone)]
     struct OtherActor {
         message: String,
         child: Option<ActorRef<TestEvent, TestActor>>
@@ -188,10 +190,11 @@ mod tests {
 
     #[async_trait]
     impl Actor<TestEvent> for OtherActor {
-        async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) {
+        async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
             log::debug!("OtherActor initial message: {}", &self.message);
             let child = TestActor { counter: 0 };
             self.child = ctx.create_child("child", child).await.ok();
+            Ok(())
         }
 
         async fn post_stop(&mut self, _ctx: &mut ActorContext<TestEvent>) {
@@ -237,6 +240,14 @@ mod tests {
         assert_eq!(result, 1);
     }
 
+    #[derive(Debug, Error)]
+    #[error("custom error")]
+    struct CustomError(String);
+
+    fn create_other(message: String) -> OtherActor {
+        OtherActor { message, child: None }
+    }
+
     #[tokio::test]
     async fn actor_get_or_create() {
         if std::env::var("RUST_LOG").is_err() {
@@ -248,7 +259,7 @@ mod tests {
         let system = ActorSystem::new("test", bus);
 
         let initial_message = "hello world!".to_string();
-        let actor_fn = || OtherActor { message: initial_message, child: None };
+        let actor_fn = || create_other(initial_message);
         let mut actor_ref = system.get_or_create_actor("test-actor", actor_fn ).await.unwrap();
 
         let msg = OtherMessage("Updated message.".to_string());

@@ -2,7 +2,7 @@
 //!
 //! This crate provides a minimally functioning actor system with a common
 //! event bus. Tokio unbounded channels are used for the mailbox of the
-//! actors, and actor behaviour (defined through the `Handler` trait) can
+//! actors, and actor behaviour (defined through the [`Handler`] trait) can
 //! use the request+response pattern (using tokio oneshot channel for
 //! responses). You an send messages to actors either through a `tell`
 //! where the method does not provide a response, or an `ask`. The `ask`
@@ -20,7 +20,7 @@
 //! impl SystemEvent for TestEvent {}
 //!
 //! // The actor struct must derive Clone.
-//! #[derive(Clone)]
+//! #[derive(Default, Clone)]
 //! struct TestActor {
 //!     counter: usize
 //! }
@@ -44,7 +44,7 @@
 //! // has a `String` return type because that is what we defined the
 //! // Response to be of `TestMessage`. As the method is async, we have
 //! // to annotate the implementation with the `async_trait` macro (a
-//! // re-export of the async-trait crate).
+//! // re-export of the `async_trait` crate).
 //! #[async_trait]
 //! impl Handler<TestEvent, TestMessage> for TestActor {
 //!     async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> String {
@@ -95,7 +95,23 @@ mod actor;
 mod bus;
 mod system;
 
-pub use actor::{Actor, ActorRef, ActorPath, ActorError, ActorContext, Handler, Message};
+pub use actor::{Actor, ActorRef, ActorPath, ActorError, ActorContext, Handler, Message, supervision::{SupervisionStrategy, RetryStrategy}};
+pub mod supervision {
+    //! Actor Supervision Strategies
+    //!
+    //! To supervise actor startup, you can choose to just have the actor Stop,
+    //! or set a [`super::RetryStrategy`]. There are three built-in strategies you can
+    //! use: [`NoIntervalStrategy`], [`FixedIntervalStrategy`],
+    //! and [`ExponentialBackoffStrategy`].
+    //!
+    //! You can also opt to create your own strategy by implementing the provided
+    //! [`super::RetryStrategy`] trait.
+    pub use crate::actor::supervision::{
+        NoIntervalStrategy,
+        FixedIntervalStrategy,
+        ExponentialBackoffStrategy
+    };
+}
 pub use bus::{EventBus, EventReceiver};
 pub use system::{ActorSystem, SystemEvent};
 

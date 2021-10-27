@@ -1,6 +1,6 @@
 [package]
 name = "tiny-tokio-actor"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2018"
 authors = ["fdeantoni <fdeantoni@gmail.com>"]
 license = "Apache-2.0"
@@ -14,13 +14,15 @@ repository = "https://github.com/fdeantoni/tiny-tokio-actor"
 [dependencies]
 tokio = { version = "1", features = ["sync", "time", "macros"] }
 async-trait = "0.1"
+backoff = "0.3"
 log = "0.4"
+anyhow = "1.0"
 thiserror = "1.0"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
 futures = { version = "0.3", default-features = false, features = ["alloc"] }
-tokio-stream = "0.1.6"
+tokio-stream = "0.1.7"
 uuid = { version = "0.8", features = ["v4"] }
 warp = { version = "0.3" }
 env_logger = "0.9"

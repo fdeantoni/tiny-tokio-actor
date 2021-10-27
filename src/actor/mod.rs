@@ -1,11 +1,14 @@
 pub(crate) mod handler;
 pub(crate) mod runner;
+pub(crate) mod supervision;
+
+use thiserror::Error;
+use async_trait::async_trait;
 
 mod path;
 pub use path::ActorPath;
 
-use thiserror::Error;
-use async_trait::async_trait;
+use supervision::SupervisionStrategy;
 
 use crate::system::{ActorSystem, SystemEvent};
 
@@ -13,7 +16,7 @@ use crate::system::{ActorSystem, SystemEvent};
 /// is running it.
 pub struct ActorContext<E: SystemEvent> {
     pub path: ActorPath,
-    pub system: ActorSystem<E>
+    pub system: ActorSystem<E>,
 }
 
 impl<E: SystemEvent> ActorContext<E> {
@@ -34,7 +37,7 @@ impl<E: SystemEvent> ActorContext<E> {
     pub async fn get_or_create_child<A, F>(&self, name: &str, actor_fn: F) -> Result<ActorRef<E, A>, ActorError>
     where
         A: Actor<E>,
-        F: FnOnce() -> A
+        F: FnOnce() -> A,
     {
         let path = self.path.clone() / name;
         self.system.get_or_create_actor_path(&path, actor_fn).await
@@ -44,6 +47,13 @@ impl<E: SystemEvent> ActorContext<E> {
     pub async fn stop_child(&self, name: &str) {
         let path = self.path.clone() / name;
         self.system.stop_actor(&path).await;
+    }
+
+    pub(crate) async fn restart<A>(&mut self, actor: &mut A, error: Option<&ActorError>) -> Result<(), ActorError>
+    where
+        A: Actor<E>,
+    {
+        actor.pre_restart(self,  error).await
     }
 }
 
@@ -61,12 +71,79 @@ pub trait Handler<E: SystemEvent, M: Message>: Send + Sync {
 }
 
 /// Basic trait for actors. Allows you to define tasks that should be run before
-/// actor startup, and tasks that should be run after the  actor is stopped.
+/// actor startup, when an actor restarts, and tasks that should be run after
+/// the  actor is stopped. It also allows you to define a supervisor strategy
+/// that should govern the actor when it fails to start up properly. For
+/// example:
+/// ```
+/// use tiny_tokio_actor::*;
+/// use std::time::Duration;
+///
+/// #[derive(Clone, Debug)]
+/// struct TestEvent(String);
+///
+/// impl SystemEvent for TestEvent {}
+///
+/// # #[derive(Clone)]
+/// # struct Database;
+/// # impl Database {
+/// #   pub fn init() -> Result<Self, std::io::Error> {
+/// #       Ok(Database)
+/// #   }
+/// # }
+///
+/// #[derive(Clone)]
+/// struct MyActor {
+///     db: Option<Database>
+/// }
+///
+/// #[async_trait]
+/// impl Actor<TestEvent> for MyActor {
+///
+///     // If it fails to start up, retry the actor 5 times, with a wait period
+///     // of 5 seconds before each retry
+///     fn supervision_strategy() -> SupervisionStrategy {
+///         let strategy = supervision::FixedIntervalStrategy::new(5, Duration::from_secs(5));
+///         SupervisionStrategy::Retry(Box::new(strategy))
+///     }
+///
+///     // Initialize the database
+///     async fn pre_start(&mut self, _ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
+///         let db = Database::init().map_err(ActorError::new)?;
+///         self.db = Some(db);
+///         Ok(())
+///     }
+///
+///     // When restarting, log an error message and try starting again
+///     async fn pre_restart(&mut self, ctx: &mut ActorContext<TestEvent>, error: Option<&ActorError>) -> Result<(), ActorError> {
+///         log::error!("Actor '{}' is restarting due to {:#?}. Restarting...", ctx.path, error);
+///         self.pre_start(ctx).await
+///     }
+/// }
+/// ```
 #[async_trait]
 pub trait Actor<E: SystemEvent>: Clone + Send + Sync + 'static {
 
+    /// Defines the supervision strategy to use for this actor. By default it is
+    /// `Stop` which simply stops the actor if an error occurs at startup. You
+    /// can also set this to [`SupervisionStrategy::Retry`] with a chosen
+    /// [`supervision::RetryStrategy`].
+    fn supervision_strategy() -> SupervisionStrategy {
+        SupervisionStrategy::Stop
+    }
+
     /// Override this function if you like to perform initialization of the actor
-    async fn pre_start(&mut self, _ctx: &mut ActorContext<E>) {}
+    async fn pre_start(&mut self, _ctx: &mut ActorContext<E>) -> Result<(), ActorError> {
+        Ok(())
+    }
+
+    /// Override this function if you want to define what should happen when an
+    /// error occurs in [`Actor::pre_start()`]. By default it simply calls
+    /// `pre_start()` again, but you can also choose to reinitialize the actor
+    /// in some other way.
+    async fn pre_restart(&mut self, ctx: &mut ActorContext<E>, _error: Option<&ActorError>) -> Result<(), ActorError> {
+        self.pre_start(ctx).await
+    }
 
     /// Override this function if you like to perform work when the actor is stopped
     async fn post_stop(&mut self, _ctx: &mut ActorContext<E>) {}
@@ -111,6 +188,12 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
         self.sender.ask(msg).await
     }
 
+    /// Checks if the actor message box is still open. If it is closed, the actor
+    /// is not running.
+    pub fn is_closed(&self) -> bool {
+        self.sender.is_closed()
+    }
+
     pub(crate) fn new(path: ActorPath, sender: handler::MailboxSender<E, A>) -> Self {
         let handler = handler::HandlerRef::new(sender);
         ActorRef {
@@ -132,6 +215,21 @@ pub enum ActorError {
     #[error("Actor exists")]
     Exists(ActorPath),
 
+    #[error("Actor creation failed")]
+    CreateError(String),
+
+    #[error("Sending message failed")]
+    SendError(String),
+
     #[error("Actor runtime error")]
-    Runtime(String)
+    RuntimeError(anyhow::Error)
+}
+
+impl ActorError {
+    pub fn new<E>(error: E) -> Self
+    where
+    E: std::error::Error + Send + Sync + 'static
+    {
+        Self::RuntimeError(anyhow::Error::new(error))
+    }
 }

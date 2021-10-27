@@ -5,7 +5,7 @@ Another actor library! Why another? I really like the actor model for developmen
 
 ```toml
 [dependencies]
-tiny-tokio-actor = "0.2"
+tiny-tokio-actor = "0.3"
 ```
 
 Lets define an actor. First import the necessary crate:
@@ -23,7 +23,7 @@ impl SystemEvent for TestEvent {}
 ```
 
 Next define the actor struct. When implementing the `Actor` trait, you can override
-the default `pre_start()` and `post_stop()` methods:
+the default `pre_start()`, `pre_restart()`, and `post_stop()` methods:
 ```rust
 #[derive(Clone)]
 struct TestActor {
@@ -32,8 +32,21 @@ struct TestActor {
 
 #[async_trait]
 impl Actor<TestEvent> for TestActor {
-    async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) {
+
+    // This actor will immediately retry 5 times if it fails to start
+    fn supervision_strategy() -> SupervisionStrategy {
+        let strategy = supervision::NoIntervalStrategy::new(5);
+        SupervisionStrategy::Retry(Box::new(strategy))
+    }
+
+    async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
         ctx.system.publish(TestEvent(format!("Actor '{}' started.", ctx.path)));
+        Ok(())
+    }
+
+    async fn pre_restart(&mut self, ctx: &mut ActorContext<TestEvent>, error: Option<&ActorError>) -> Result<(), ActorError> {
+        log::error!("Actor '{}' is restarting due to {:#?}", ctx.path, error);
+        self.pre_start(ctx).await
     }
 
     async fn post_stop(&mut self, ctx: &mut ActorContext<TestEvent>) {

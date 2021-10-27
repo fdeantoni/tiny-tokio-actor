@@ -53,7 +53,7 @@ impl ActorPath {
     }
 
     pub fn is_ancestor_of(&self, other: &ActorPath) -> bool {
-        let me = format!("{}/", self.to_string());
+        let me = format!("{}/", self);
         other.to_string().as_str().starts_with(me.as_str())
     }
 
