@@ -2,8 +2,8 @@ pub(crate) mod handler;
 pub(crate) mod runner;
 pub(crate) mod supervision;
 
-use thiserror::Error;
 use async_trait::async_trait;
+use thiserror::Error;
 
 mod path;
 pub use path::ActorPath;
@@ -20,9 +20,12 @@ pub struct ActorContext<E: SystemEvent> {
 }
 
 impl<E: SystemEvent> ActorContext<E> {
-
     /// Create a child actor under this actor.
-    pub async fn create_child<A: Actor<E>>(&self, name: &str, actor: A) -> Result<ActorRef<E, A>, ActorError> {
+    pub async fn create_child<A: Actor<E>>(
+        &self,
+        name: &str,
+        actor: A,
+    ) -> Result<ActorRef<E, A>, ActorError> {
         let path = self.path.clone() / name;
         self.system.create_actor_path(path, actor).await
     }
@@ -34,7 +37,11 @@ impl<E: SystemEvent> ActorContext<E> {
     }
 
     /// Retrieve or create a new child under this actor if it does not exist yet
-    pub async fn get_or_create_child<A, F>(&self, name: &str, actor_fn: F) -> Result<ActorRef<E, A>, ActorError>
+    pub async fn get_or_create_child<A, F>(
+        &self,
+        name: &str,
+        actor_fn: F,
+    ) -> Result<ActorRef<E, A>, ActorError>
     where
         A: Actor<E>,
         F: FnOnce() -> A,
@@ -49,11 +56,15 @@ impl<E: SystemEvent> ActorContext<E> {
         self.system.stop_actor(&path).await;
     }
 
-    pub(crate) async fn restart<A>(&mut self, actor: &mut A, error: Option<&ActorError>) -> Result<(), ActorError>
+    pub(crate) async fn restart<A>(
+        &mut self,
+        actor: &mut A,
+        error: Option<&ActorError>,
+    ) -> Result<(), ActorError>
     where
         A: Actor<E>,
     {
-        actor.pre_restart(self,  error).await
+        actor.pre_restart(self, error).await
     }
 }
 
@@ -123,7 +134,6 @@ pub trait Handler<E: SystemEvent, M: Message>: Send + Sync {
 /// ```
 #[async_trait]
 pub trait Actor<E: SystemEvent>: Clone + Send + Sync + 'static {
-
     /// Defines the supervision strategy to use for this actor. By default it is
     /// `Stop` which simply stops the actor if an error occurs at startup. You
     /// can also set this to [`SupervisionStrategy::Retry`] with a chosen
@@ -141,7 +151,11 @@ pub trait Actor<E: SystemEvent>: Clone + Send + Sync + 'static {
     /// error occurs in [`Actor::pre_start()`]. By default it simply calls
     /// `pre_start()` again, but you can also choose to reinitialize the actor
     /// in some other way.
-    async fn pre_restart(&mut self, ctx: &mut ActorContext<E>, _error: Option<&ActorError>) -> Result<(), ActorError> {
+    async fn pre_restart(
+        &mut self,
+        ctx: &mut ActorContext<E>,
+        _error: Option<&ActorError>,
+    ) -> Result<(), ActorError> {
         self.pre_start(ctx).await
     }
 
@@ -154,18 +168,17 @@ pub trait Actor<E: SystemEvent>: Clone + Send + Sync + 'static {
 #[derive(Clone)]
 pub struct ActorRef<E: SystemEvent, A: Actor<E>> {
     path: ActorPath,
-    sender: handler::HandlerRef<E, A>
+    sender: handler::HandlerRef<E, A>,
 }
 
 impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
-
     /// Get the path of this actor
     pub fn path(&self) -> &ActorPath {
         &self.path
     }
 
     /// Get the path of this actor
-    #[deprecated(since="0.2.3", note="please use `path` instead")]
+    #[deprecated(since = "0.2.3", note = "please use `path` instead")]
     pub fn get_path(&self) -> &ActorPath {
         &self.path
     }
@@ -174,7 +187,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
     pub fn tell<M>(&mut self, msg: M) -> Result<(), ActorError>
     where
         M: Message,
-        A: Handler<E, M>
+        A: Handler<E, M>,
     {
         self.sender.tell(msg)
     }
@@ -183,7 +196,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
     pub async fn ask<M>(&mut self, msg: M) -> Result<M::Response, ActorError>
     where
         M: Message,
-        A: Handler<E, M>
+        A: Handler<E, M>,
     {
         self.sender.ask(msg).await
     }
@@ -198,7 +211,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
         let handler = handler::HandlerRef::new(sender);
         ActorRef {
             path,
-            sender: handler
+            sender: handler,
         }
     }
 }
@@ -211,7 +224,6 @@ impl<E: SystemEvent, A: Actor<E>> std::fmt::Debug for ActorRef<E, A> {
 
 #[derive(Error, Debug)]
 pub enum ActorError {
-
     #[error("Actor exists")]
     Exists(ActorPath),
 
@@ -222,13 +234,13 @@ pub enum ActorError {
     SendError(String),
 
     #[error("Actor runtime error")]
-    RuntimeError(anyhow::Error)
+    RuntimeError(anyhow::Error),
 }
 
 impl ActorError {
     pub fn new<E>(error: E) -> Self
     where
-    E: std::error::Error + Send + Sync + 'static
+        E: std::error::Error + Send + Sync + 'static,
     {
         Self::RuntimeError(anyhow::Error::new(error))
     }

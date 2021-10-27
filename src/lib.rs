@@ -95,7 +95,10 @@ mod actor;
 mod bus;
 mod system;
 
-pub use actor::{Actor, ActorRef, ActorPath, ActorError, ActorContext, Handler, Message, supervision::{SupervisionStrategy, RetryStrategy}};
+pub use actor::{
+    supervision::{RetryStrategy, SupervisionStrategy},
+    Actor, ActorContext, ActorError, ActorPath, ActorRef, Handler, Message,
+};
 pub mod supervision {
     //! Actor Supervision Strategies
     //!
@@ -107,9 +110,7 @@ pub mod supervision {
     //! You can also opt to create your own strategy by implementing the provided
     //! [`super::RetryStrategy`] trait.
     pub use crate::actor::supervision::{
-        NoIntervalStrategy,
-        FixedIntervalStrategy,
-        ExponentialBackoffStrategy
+        ExponentialBackoffStrategy, FixedIntervalStrategy, NoIntervalStrategy,
     };
 }
 pub use bus::{EventBus, EventReceiver};

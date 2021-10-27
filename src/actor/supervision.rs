@@ -1,4 +1,7 @@
-use std::{sync::{Arc, Mutex}, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use backoff::backoff::Backoff as InnerBackoff;
 
@@ -8,7 +11,7 @@ use backoff::backoff::Backoff as InnerBackoff;
 #[derive(Debug)]
 pub enum SupervisionStrategy {
     Stop,
-    Retry(Box<dyn RetryStrategy>)
+    Retry(Box<dyn RetryStrategy>),
 }
 
 /// Trait to define a RetryStrategy. You can use this trait to define your
@@ -23,14 +26,12 @@ pub trait RetryStrategy: std::fmt::Debug + Send + Sync {
 /// A Retry strategy that immediately retries an actor that failed to start
 #[derive(Debug, Default)]
 pub struct NoIntervalStrategy {
-    max_retries: usize
+    max_retries: usize,
 }
 
 impl NoIntervalStrategy {
     pub fn new(max_retries: usize) -> Self {
-        NoIntervalStrategy {
-            max_retries
-        }
+        NoIntervalStrategy { max_retries }
     }
 }
 
@@ -49,14 +50,14 @@ impl RetryStrategy for NoIntervalStrategy {
 #[derive(Debug, Default)]
 pub struct FixedIntervalStrategy {
     max_retries: usize,
-    duration: Duration
+    duration: Duration,
 }
 
 impl FixedIntervalStrategy {
     pub fn new(max_retries: usize, duration: Duration) -> Self {
         FixedIntervalStrategy {
             max_retries,
-            duration
+            duration,
         }
     }
 }
@@ -76,14 +77,14 @@ impl RetryStrategy for FixedIntervalStrategy {
 #[derive(Debug, Default)]
 pub struct ExponentialBackoffStrategy {
     max_retries: usize,
-    inner: Arc<Mutex<backoff::ExponentialBackoff>>
+    inner: Arc<Mutex<backoff::ExponentialBackoff>>,
 }
 
 impl ExponentialBackoffStrategy {
     pub fn new(max_retries: usize) -> Self {
         ExponentialBackoffStrategy {
             max_retries,
-            inner: Arc::new(Mutex::new(backoff::ExponentialBackoff::default()))
+            inner: Arc::new(Mutex::new(backoff::ExponentialBackoff::default())),
         }
     }
 }
@@ -94,8 +95,6 @@ impl RetryStrategy for ExponentialBackoffStrategy {
     }
 
     fn next_backoff(&mut self) -> Option<Duration> {
-        self.inner.lock().ok().and_then(|mut eb| {
-            eb.next_backoff()
-        })
+        self.inner.lock().ok().and_then(|mut eb| eb.next_backoff())
     }
 }

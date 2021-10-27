@@ -2,7 +2,11 @@ use std::{any::Any, collections::HashMap, sync::Arc};
 
 use tokio::sync::RwLock;
 
-use crate::{ActorError, ActorPath, actor::{Actor, ActorRef, runner::ActorRunner}, bus::{EventBus, EventReceiver}};
+use crate::{
+    actor::{runner::ActorRunner, Actor, ActorRef},
+    bus::{EventBus, EventReceiver},
+    ActorError, ActorPath,
+};
 
 /// Events that this actor system will send
 pub trait SystemEvent: Clone + Send + Sync + 'static {}
@@ -11,11 +15,10 @@ pub trait SystemEvent: Clone + Send + Sync + 'static {}
 pub struct ActorSystem<E: SystemEvent> {
     name: String,
     actors: Arc<RwLock<HashMap<ActorPath, Box<dyn Any + Send + Sync + 'static>>>>,
-    bus: EventBus<E>
+    bus: EventBus<E>,
 }
 
 impl<E: SystemEvent> ActorSystem<E> {
-
     /// The name given to this actor system
     pub fn name(&self) -> &str {
         &self.name
@@ -42,23 +45,26 @@ impl<E: SystemEvent> ActorSystem<E> {
     /// is returned instead.
     pub async fn get_actor<A: Actor<E>>(&self, path: &ActorPath) -> Option<ActorRef<E, A>> {
         let actors = self.actors.read().await;
-        actors.get(path).and_then(|any| {
-            any.downcast_ref::<ActorRef<E, A>>().cloned()
-        })
+        actors
+            .get(path)
+            .and_then(|any| any.downcast_ref::<ActorRef<E, A>>().cloned())
     }
 
-    pub(crate) async fn create_actor_path<A: Actor<E>>(&self, path: ActorPath, actor: A) -> Result<ActorRef<E, A>, ActorError> {
-
+    pub(crate) async fn create_actor_path<A: Actor<E>>(
+        &self,
+        path: ActorPath,
+        actor: A,
+    ) -> Result<ActorRef<E, A>, ActorError> {
         log::debug!("Creating actor '{}' on system '{}'...", &path, &self.name);
 
         let mut actors = self.actors.write().await;
         if actors.contains_key(&path) {
-            return Err(ActorError::Exists( path ))
+            return Err(ActorError::Exists(path));
         }
 
         let system = self.clone();
         let (mut runner, actor_ref) = ActorRunner::create(path, actor);
-        tokio::spawn( async move {
+        tokio::spawn(async move {
             runner.start(system).await;
         });
 
@@ -72,13 +78,21 @@ impl<E: SystemEvent> ActorSystem<E> {
 
     /// Launches a new top level actor on this actor system at the '/user' actor path. If another actor with
     /// the same name already exists, an `Err(ActorError::Exists(ActorPath))` is returned instead.
-    pub async fn create_actor<A: Actor<E>>(&self, name: &str, actor: A) -> Result<ActorRef<E, A>, ActorError> {
+    pub async fn create_actor<A: Actor<E>>(
+        &self,
+        name: &str,
+        actor: A,
+    ) -> Result<ActorRef<E, A>, ActorError> {
         let path = ActorPath::from("/user") / name;
         self.create_actor_path(path, actor).await
     }
 
     /// Retrieve or create a new actor on this actor system if it does not exist yet.
-    pub async fn get_or_create_actor<A, F>(&self, name: &str, actor_fn: F) -> Result<ActorRef<E, A>, ActorError>
+    pub async fn get_or_create_actor<A, F>(
+        &self,
+        name: &str,
+        actor_fn: F,
+    ) -> Result<ActorRef<E, A>, ActorError>
     where
         A: Actor<E>,
         F: FnOnce() -> A,
@@ -87,7 +101,11 @@ impl<E: SystemEvent> ActorSystem<E> {
         self.get_or_create_actor_path(&path, actor_fn).await
     }
 
-    pub(crate) async fn get_or_create_actor_path<A, F>(&self, path: &ActorPath, actor_fn: F) -> Result<ActorRef<E, A>, ActorError>
+    pub(crate) async fn get_or_create_actor_path<A, F>(
+        &self,
+        path: &ActorPath,
+        actor_fn: F,
+    ) -> Result<ActorRef<E, A>, ActorError>
     where
         A: Actor<E>,
         F: FnOnce() -> A,
@@ -133,8 +151,8 @@ impl<E: SystemEvent> ActorSystem<E> {
 #[cfg(test)]
 mod tests {
 
-    use async_trait::async_trait;
     use crate::actor::{Actor, ActorContext, Handler, Message};
+    use async_trait::async_trait;
     use thiserror::Error;
 
     use super::*;
@@ -146,12 +164,15 @@ mod tests {
 
     #[derive(Default, Clone)]
     struct TestActor {
-        counter: usize
+        counter: usize,
     }
 
     #[async_trait]
     impl Actor<TestEvent> for TestActor {
-        async fn pre_start(&mut self, _ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
+        async fn pre_start(
+            &mut self,
+            _ctx: &mut ActorContext<TestEvent>,
+        ) -> Result<(), ActorError> {
             log::debug!("Starting actor TestActor!");
             Ok(())
         }
@@ -177,7 +198,8 @@ mod tests {
             self.counter += 1;
             log::debug!("counter is now {}", &self.counter);
             log::debug!("{} on system {}", &ctx.path, ctx.system.name());
-            ctx.system.publish(TestEvent("Message received!".to_string()));
+            ctx.system
+                .publish(TestEvent("Message received!".to_string()));
             self.counter
         }
     }
@@ -185,7 +207,7 @@ mod tests {
     #[derive(Default, Clone)]
     struct OtherActor {
         message: String,
-        child: Option<ActorRef<TestEvent, TestActor>>
+        child: Option<ActorRef<TestEvent, TestActor>>,
     }
 
     #[async_trait]
@@ -217,7 +239,8 @@ mod tests {
             self.message = msg.0;
             log::debug!("message is now {}", &self.message);
             log::debug!("{} on system {}", &ctx.path, ctx.system.name());
-            ctx.system.publish(TestEvent("Received message!".to_string()));
+            ctx.system
+                .publish(TestEvent("Received message!".to_string()));
             self.message.clone()
         }
     }
@@ -245,7 +268,10 @@ mod tests {
     struct CustomError(String);
 
     fn create_other(message: String) -> OtherActor {
-        OtherActor { message, child: None }
+        OtherActor {
+            message,
+            child: None,
+        }
     }
 
     #[tokio::test]
@@ -260,7 +286,10 @@ mod tests {
 
         let initial_message = "hello world!".to_string();
         let actor_fn = || create_other(initial_message);
-        let mut actor_ref = system.get_or_create_actor("test-actor", actor_fn ).await.unwrap();
+        let mut actor_ref = system
+            .get_or_create_actor("test-actor", actor_fn)
+            .await
+            .unwrap();
 
         let msg = OtherMessage("Updated message.".to_string());
         let result = actor_ref.ask(msg).await.unwrap();
@@ -312,7 +341,7 @@ mod tests {
             loop {
                 match events.recv().await {
                     Ok(event) => println!("Received event! {:?}", event),
-                    Err(err) => println!("Error receivng event!!! {:?}", err)
+                    Err(err) => println!("Error receivng event!!! {:?}", err),
                 }
             }
         });
@@ -364,7 +393,7 @@ mod tests {
 
         let actor = OtherActor {
             message: "Initial".to_string(),
-            child: None
+            child: None,
         };
 
         let bus = EventBus::<TestEvent>::new(1000);

@@ -1,5 +1,5 @@
-use std::fmt::{Error, Formatter};
 use std::cmp::Ordering;
+use std::fmt::{Error, Formatter};
 
 /// Unique identifier for running actors.
 #[derive(Clone, Hash, Eq, PartialEq, PartialOrd, Ord)]
@@ -77,9 +77,10 @@ impl ActorPath {
 
 impl From<&str> for ActorPath {
     fn from(str: &str) -> Self {
-        let tokens: Vec<String> = str.split('/')
+        let tokens: Vec<String> = str
+            .split('/')
             .filter(|x| !x.trim().is_empty())
-            .map(|s| s.to_string() )
+            .map(|s| s.to_string())
             .collect();
 
         ActorPath(tokens)
@@ -113,7 +114,7 @@ impl std::fmt::Display for ActorPath {
         match self.level().cmp(&1) {
             Ordering::Less => write!(f, "/"),
             Ordering::Equal => write!(f, "/{}", self.0[0]),
-            Ordering::Greater => write!(f, "/{}", self.0.join("/"))
+            Ordering::Greater => write!(f, "/{}", self.0.join("/")),
         }
     }
 }
@@ -123,7 +124,7 @@ impl std::fmt::Debug for ActorPath {
         match self.level().cmp(&1) {
             Ordering::Less => write!(f, "/"),
             Ordering::Equal => write!(f, "/{}", self.0[0]),
-            Ordering::Greater => write!(f, "/{}", self.0.join("/"))
+            Ordering::Greater => write!(f, "/{}", self.0.join("/")),
         }
     }
 }

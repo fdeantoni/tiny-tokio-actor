@@ -3,13 +3,15 @@ use std::marker::PhantomData;
 use async_trait::async_trait;
 use tokio::sync::{mpsc, oneshot};
 
-use crate::{actor::{ActorContext, Handler, Message}, system::SystemEvent};
+use crate::{
+    actor::{ActorContext, Handler, Message},
+    system::SystemEvent,
+};
 
 use super::{Actor, ActorError};
 
 #[async_trait]
 pub trait MessageHandler<E: SystemEvent, A: Actor<E>>: Send + Sync {
-
     async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>);
 }
 
@@ -22,7 +24,7 @@ where
     payload: M,
     rsvp: Option<oneshot::Sender<M::Response>>,
     _phantom_actor: PhantomData<A>,
-    _phantom_event: PhantomData<E>
+    _phantom_event: PhantomData<E>,
 }
 
 #[async_trait]
@@ -43,9 +45,7 @@ where
     E: SystemEvent,
     A: Actor<E> + Handler<E, M>,
 {
-
     async fn process(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
-
         let result = actor.handle(self.payload.clone(), ctx).await;
 
         if let Some(rsvp) = std::mem::replace(&mut self.rsvp, None) {
@@ -70,11 +70,10 @@ pub type MailboxSender<E, A> = mpsc::UnboundedSender<BoxedMessageHandler<E, A>>;
 
 pub struct ActorMailbox<E: SystemEvent, A: Actor<E>> {
     _phantom_actor: PhantomData<A>,
-    _phantom_event: PhantomData<E>
+    _phantom_event: PhantomData<E>,
 }
 
 impl<E: SystemEvent, A: Actor<E>> ActorMailbox<E, A> {
-
     pub fn create() -> (MailboxSender<E, A>, MailboxReceiver<E, A>) {
         mpsc::unbounded_channel()
     }
@@ -84,21 +83,18 @@ pub type BoxedMessageHandler<E, A> = Box<dyn MessageHandler<E, A>>;
 
 #[derive(Clone)]
 pub struct HandlerRef<E: SystemEvent, A: Actor<E>> {
-    sender: mpsc::UnboundedSender<BoxedMessageHandler<E, A>>
+    sender: mpsc::UnboundedSender<BoxedMessageHandler<E, A>>,
 }
 
 impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
-
     pub(crate) fn new(sender: mpsc::UnboundedSender<BoxedMessageHandler<E, A>>) -> Self {
-        HandlerRef {
-            sender
-        }
+        HandlerRef { sender }
     }
 
     pub fn tell<M>(&mut self, msg: M) -> Result<(), ActorError>
     where
         M: Message,
-        A: Handler<E, M>
+        A: Handler<E, M>,
     {
         let message = ActorMessage::<M, E, A>::new(msg, None);
         if let Err(error) = self.sender.send(Box::new(message)) {
@@ -112,7 +108,7 @@ impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
     pub async fn ask<M>(&mut self, msg: M) -> Result<M::Response, ActorError>
     where
         M: Message,
-        A: Handler<E, M>
+        A: Handler<E, M>,
     {
         let (response_sender, response_receiver) = oneshot::channel();
         let message = ActorMessage::<M, E, A>::new(msg, Some(response_sender));
@@ -120,9 +116,9 @@ impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
             log::error!("Failed to ask message! {}", error.to_string());
             Err(ActorError::SendError(error.to_string()))
         } else {
-            response_receiver.await.map_err(|error| {
-                ActorError::SendError(error.to_string())
-            })
+            response_receiver
+                .await
+                .map_err(|error| ActorError::SendError(error.to_string()))
         }
     }
 
@@ -134,13 +130,13 @@ impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
 #[cfg(test)]
 mod tests {
 
-    use crate::{ActorPath, bus::EventBus, system::ActorSystem};
+    use crate::{bus::EventBus, system::ActorSystem, ActorPath};
 
     use super::*;
 
     #[derive(Default, Clone)]
     struct MyActor {
-        counter: usize
+        counter: usize,
     }
 
     #[derive(Debug, Clone)]
@@ -166,7 +162,6 @@ mod tests {
 
     #[tokio::test]
     async fn actor_tell() {
-
         if std::env::var("RUST_LOG").is_err() {
             std::env::set_var("RUST_LOG", "trace");
         }
@@ -174,15 +169,16 @@ mod tests {
 
         let mut actor = MyActor { counter: 0 };
         let msg = MyMessage("Hello World!".to_string());
-        let (sender, mut receiver): (MailboxSender<MyMessage, MyActor>, MailboxReceiver<MyMessage, MyActor>) = ActorMailbox::create();
-        let mut actor_ref = HandlerRef {
-            sender
-        };
+        let (sender, mut receiver): (
+            MailboxSender<MyMessage, MyActor>,
+            MailboxReceiver<MyMessage, MyActor>,
+        ) = ActorMailbox::create();
+        let mut actor_ref = HandlerRef { sender };
         let bus = EventBus::<MyMessage>::new(1000);
         let system = ActorSystem::new("test", bus);
         let path = ActorPath::from("/test");
         let mut ctx = ActorContext { path, system };
-        tokio::spawn( async move {
+        tokio::spawn(async move {
             while let Some(mut msg) = receiver.recv().await {
                 msg.handle(&mut actor, &mut ctx).await;
             }
@@ -195,7 +191,6 @@ mod tests {
 
     #[tokio::test]
     async fn actor_ask() {
-
         if std::env::var("RUST_LOG").is_err() {
             std::env::set_var("RUST_LOG", "trace");
         }
@@ -203,15 +198,16 @@ mod tests {
 
         let mut actor = MyActor { counter: 0 };
         let msg = MyMessage("Hello World!".to_string());
-        let (sender, mut receiver): (MailboxSender<MyMessage, MyActor>, MailboxReceiver<MyMessage, MyActor>) = ActorMailbox::create();
-        let mut actor_ref = HandlerRef {
-            sender
-        };
+        let (sender, mut receiver): (
+            MailboxSender<MyMessage, MyActor>,
+            MailboxReceiver<MyMessage, MyActor>,
+        ) = ActorMailbox::create();
+        let mut actor_ref = HandlerRef { sender };
         let bus = EventBus::<MyMessage>::new(1000);
         let system = ActorSystem::new("test", bus);
         let path = ActorPath::from("/test");
         let mut ctx = ActorContext { path, system };
-        tokio::spawn( async move {
+        tokio::spawn(async move {
             while let Some(mut msg) = receiver.recv().await {
                 msg.handle(&mut actor, &mut ctx).await;
             }

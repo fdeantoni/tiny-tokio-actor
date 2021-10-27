@@ -1,6 +1,9 @@
-use crate::{system::{ActorSystem, SystemEvent}};
+use crate::system::{ActorSystem, SystemEvent};
 
-use super::{Actor, ActorContext, ActorRef, ActorPath, SupervisionStrategy, handler::{ActorMailbox, MailboxReceiver}};
+use super::{
+    handler::{ActorMailbox, MailboxReceiver},
+    Actor, ActorContext, ActorPath, ActorRef, SupervisionStrategy,
+};
 
 pub(crate) struct ActorRunner<E: SystemEvent, A: Actor<E>> {
     path: ActorPath,
@@ -9,7 +12,6 @@ pub(crate) struct ActorRunner<E: SystemEvent, A: Actor<E>> {
 }
 
 impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
-
     pub fn create(path: ActorPath, actor: A) -> (Self, ActorRef<E, A>) {
         let (sender, receiver) = ActorMailbox::create();
         let actor_ref = ActorRef::new(path.clone(), sender);
@@ -22,12 +24,11 @@ impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
     }
 
     pub async fn start(&mut self, system: ActorSystem<E>) {
-
         log::debug!("Starting actor '{}'...", &self.path);
 
         let mut ctx = ActorContext {
             path: self.path.clone(),
-            system
+            system,
         };
 
         let mut start_error = self.actor.pre_start(&mut ctx).await.err();
@@ -36,9 +37,12 @@ impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
             match A::supervision_strategy() {
                 SupervisionStrategy::Stop => {
                     log::error!("Actor '{}' failed to start!", &self.path);
-                },
+                }
                 SupervisionStrategy::Retry(mut retry_strategy) => {
-                    log::debug!("Restarting actor with retry strategy: {:?}", &retry_strategy);
+                    log::debug!(
+                        "Restarting actor with retry strategy: {:?}",
+                        &retry_strategy
+                    );
                     while retries < retry_strategy.max_retries() && start_error.is_some() {
                         log::debug!("retries: {}", &retries);
                         if let Some(duration) = retry_strategy.next_backoff() {
@@ -46,7 +50,10 @@ impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
                             tokio::time::sleep(duration).await;
                         }
                         retries += 1;
-                        start_error = ctx.restart(&mut self.actor, start_error.as_ref()).await.err();
+                        start_error = ctx
+                            .restart(&mut self.actor, start_error.as_ref())
+                            .await
+                            .err();
                     }
                 }
             }
@@ -103,7 +110,6 @@ mod tests {
 
     #[tokio::test]
     async fn no_retry_strategy() {
-
         let system = start_system();
         let path = ActorPath::from("/test/actor");
         let actor = NoRetryActor;
@@ -121,7 +127,6 @@ mod tests {
 
     #[async_trait]
     impl Actor<TestEvent> for RetryNoIntervalActor {
-
         fn supervision_strategy() -> SupervisionStrategy {
             let strategy = supervision::NoIntervalStrategy::new(5);
             SupervisionStrategy::Retry(Box::new(strategy))
@@ -135,8 +140,16 @@ mod tests {
             Err(ActorError::new(error))
         }
 
-        async fn pre_restart(&mut self, ctx: &mut ActorContext<TestEvent>, error: Option<&ActorError>) -> Result<(), ActorError> {
-            log::info!("Actor '{}' is restarting due to {:#?}. Resetting counter to default", ctx.path, error);
+        async fn pre_restart(
+            &mut self,
+            ctx: &mut ActorContext<TestEvent>,
+            error: Option<&ActorError>,
+        ) -> Result<(), ActorError> {
+            log::info!(
+                "Actor '{}' is restarting due to {:#?}. Resetting counter to default",
+                ctx.path,
+                error
+            );
             *self = Self::default();
             self.counter += 1;
             log::info!("Counter is now {}", self.counter);
@@ -147,7 +160,6 @@ mod tests {
 
     #[tokio::test]
     async fn retry_no_interval_strategy() {
-
         let system = start_system();
         let path = ActorPath::from("/test/actor");
         let actor = RetryNoIntervalActor::default();
@@ -165,7 +177,6 @@ mod tests {
 
     #[async_trait]
     impl Actor<TestEvent> for RetryExpBackoffActor {
-
         fn supervision_strategy() -> SupervisionStrategy {
             let strategy = supervision::ExponentialBackoffStrategy::new(5);
             SupervisionStrategy::Retry(Box::new(strategy))
@@ -177,7 +188,11 @@ mod tests {
             Err(ActorError::new(error))
         }
 
-        async fn pre_restart(&mut self, ctx: &mut ActorContext<TestEvent>, error: Option<&ActorError>) -> Result<(), ActorError> {
+        async fn pre_restart(
+            &mut self,
+            ctx: &mut ActorContext<TestEvent>,
+            error: Option<&ActorError>,
+        ) -> Result<(), ActorError> {
             log::info!("Actor '{}' is restarting due to {:#?}.", ctx.path, error);
             self.counter += 1;
             log::info!("Counter is now {}", self.counter);
@@ -188,7 +203,6 @@ mod tests {
 
     #[tokio::test]
     async fn retry_exponetial_backoff_strategy() {
-
         let system = start_system();
         let path = ActorPath::from("/test/actor");
         let actor = RetryExpBackoffActor { counter: 0 };

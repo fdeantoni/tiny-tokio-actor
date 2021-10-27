@@ -11,7 +11,7 @@ impl SystemEvent for TestEvent {}
 // The actor struct must derive Clone.
 #[derive(Clone)]
 struct TestActor {
-    counter: usize
+    counter: usize,
 }
 
 // Mark the struct as an actor.
@@ -42,7 +42,8 @@ impl Handler<TestEvent, TestMessage> for TestActor {
         self.counter += 1;
         log::debug!("counter is now {}", &self.counter);
         log::debug!("actor on system {}", ctx.system.name());
-        ctx.system.publish(TestEvent(format!("message received by '{}'", ctx.path)));
+        ctx.system
+            .publish(TestEvent(format!("message received by '{}'", ctx.path)));
         "Ping!".to_string()
     }
 }
@@ -72,7 +73,7 @@ async fn simple_message() {
         loop {
             match events.recv().await {
                 Ok(event) => println!("Received event! {:?}", event),
-                Err(err) => println!("Error receivng event!!! {:?}", err)
+                Err(err) => println!("Error receivng event!!! {:?}", err),
             }
         }
     });

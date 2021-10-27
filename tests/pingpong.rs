@@ -7,7 +7,7 @@ impl SystemEvent for EventMessage {}
 
 #[derive(Clone)]
 struct PingActor {
-    counter: i8
+    counter: i8,
 }
 
 impl Actor<EventMessage> for PingActor {}
@@ -26,7 +26,7 @@ enum PingMessage {
 #[derive(Clone, Debug)]
 struct StartMessage {
     destination: ActorPath,
-    limit: i8
+    limit: i8,
 }
 
 impl Message for PingMessage {
@@ -42,15 +42,24 @@ impl Message for PongMessage {
 
 #[async_trait]
 impl Handler<EventMessage, PingMessage> for PingActor {
-    async fn handle(&mut self, msg: PingMessage, ctx: &mut ActorContext<EventMessage>) -> PongMessage {
+    async fn handle(
+        &mut self,
+        msg: PingMessage,
+        ctx: &mut ActorContext<EventMessage>,
+    ) -> PongMessage {
         if let PingMessage::Start(message) = msg {
             let limit = message.limit;
-            if let Some(mut destination) = ctx.system.get_actor::<PongActor>(&message.destination).await {
+            if let Some(mut destination) = ctx
+                .system
+                .get_actor::<PongActor>(&message.destination)
+                .await
+            {
                 while self.counter > -1 && self.counter < limit {
                     let ping = PingMessage::Ping(self.counter);
                     let result = destination.ask(ping).await.unwrap();
                     self.counter = result.0;
-                    ctx.system.publish(EventMessage(format!("Counter is now {}", self.counter)));
+                    ctx.system
+                        .publish(EventMessage(format!("Counter is now {}", self.counter)));
                 }
             }
         }
@@ -61,7 +70,11 @@ impl Handler<EventMessage, PingMessage> for PingActor {
 
 #[async_trait]
 impl Handler<EventMessage, PingMessage> for PongActor {
-    async fn handle(&mut self, msg: PingMessage, _ctx: &mut ActorContext<EventMessage>) -> PongMessage {
+    async fn handle(
+        &mut self,
+        msg: PingMessage,
+        _ctx: &mut ActorContext<EventMessage>,
+    ) -> PongMessage {
         if let PingMessage::Ping(counter) = msg {
             PongMessage(counter + 1)
         } else {
@@ -87,7 +100,7 @@ async fn test_ping_pong() {
 
     let start = StartMessage {
         destination: pong_ref.path().clone(),
-        limit: 5
+        limit: 5,
     };
 
     let mut events = system.events();
@@ -95,7 +108,7 @@ async fn test_ping_pong() {
         loop {
             match events.recv().await {
                 Ok(event) => println!("Received event! {:?}", event),
-                Err(err) => println!("Error receivng event!!! {:?}", err)
+                Err(err) => println!("Error receivng event!!! {:?}", err),
             }
         }
     });
