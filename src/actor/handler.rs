@@ -91,7 +91,7 @@ impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
         HandlerRef { sender }
     }
 
-    pub fn tell<M>(&mut self, msg: M) -> Result<(), ActorError>
+    pub fn tell<M>(&self, msg: M) -> Result<(), ActorError>
     where
         M: Message,
         A: Handler<E, M>,
@@ -105,7 +105,7 @@ impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
         }
     }
 
-    pub async fn ask<M>(&mut self, msg: M) -> Result<M::Response, ActorError>
+    pub async fn ask<M>(&self, msg: M) -> Result<M::Response, ActorError>
     where
         M: Message,
         A: Handler<E, M>,
@@ -173,7 +173,7 @@ mod tests {
             MailboxSender<MyMessage, MyActor>,
             MailboxReceiver<MyMessage, MyActor>,
         ) = ActorMailbox::create();
-        let mut actor_ref = HandlerRef { sender };
+        let actor_ref = HandlerRef { sender };
         let bus = EventBus::<MyMessage>::new(1000);
         let system = ActorSystem::new("test", bus);
         let path = ActorPath::from("/test");
@@ -202,7 +202,7 @@ mod tests {
             MailboxSender<MyMessage, MyActor>,
             MailboxReceiver<MyMessage, MyActor>,
         ) = ActorMailbox::create();
-        let mut actor_ref = HandlerRef { sender };
+        let actor_ref = HandlerRef { sender };
         let bus = EventBus::<MyMessage>::new(1000);
         let system = ActorSystem::new("test", bus);
         let path = ActorPath::from("/test");

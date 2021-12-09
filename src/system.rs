@@ -257,7 +257,7 @@ mod tests {
 
         let bus = EventBus::<TestEvent>::new(1000);
         let system = ActorSystem::new("test", bus);
-        let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
+        let actor_ref = system.create_actor("test-actor", actor).await.unwrap();
         let result = actor_ref.ask(msg).await.unwrap();
 
         assert_eq!(result, 1);
@@ -286,7 +286,7 @@ mod tests {
 
         let initial_message = "hello world!".to_string();
         let actor_fn = || create_other(initial_message);
-        let mut actor_ref = system
+        let actor_ref = system
             .get_or_create_actor("test-actor", actor_fn)
             .await
             .unwrap();
@@ -311,7 +311,7 @@ mod tests {
         let system = ActorSystem::new("test", bus);
 
         {
-            let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
+            let actor_ref = system.create_actor("test-actor", actor).await.unwrap();
             let result = actor_ref.ask(msg).await.unwrap();
 
             assert_eq!(result, 1);
@@ -334,7 +334,7 @@ mod tests {
 
         let bus = EventBus::<TestEvent>::new(1000);
         let system = ActorSystem::new("test", bus);
-        let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
+        let actor_ref = system.create_actor("test-actor", actor).await.unwrap();
 
         let mut events = system.events();
         tokio::spawn(async move {
@@ -366,7 +366,7 @@ mod tests {
         let system = ActorSystem::new("test", bus);
         let original = system.create_actor("test-actor", actor).await.unwrap();
 
-        if let Some(mut actor_ref) = system.get_actor::<TestActor>(original.path()).await {
+        if let Some(actor_ref) = system.get_actor::<TestActor>(original.path()).await {
             let msg = TestMessage(10);
             let result = actor_ref.ask(msg).await.unwrap();
             assert_eq!(result, 1);
@@ -374,7 +374,7 @@ mod tests {
             panic!("It should have retrieved the actor!")
         }
 
-        if let Some(mut actor_ref) = system.get_actor::<OtherActor>(original.path()).await {
+        if let Some(actor_ref) = system.get_actor::<OtherActor>(original.path()).await {
             let msg = OtherMessage("Hello world!".to_string());
             let result = actor_ref.ask(msg).await.unwrap();
             println!("Result is: {}", result);
@@ -400,7 +400,7 @@ mod tests {
         let system = ActorSystem::new("test", bus);
 
         {
-            let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
+            let actor_ref = system.create_actor("test-actor", actor).await.unwrap();
             let msg = OtherMessage("new message!".to_string());
             let result = actor_ref.ask(msg).await.unwrap();
             assert_eq!(result, "new message!".to_string());
