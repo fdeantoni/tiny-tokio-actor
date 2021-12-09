@@ -8,8 +8,7 @@ struct TestEvent(String);
 // Mark the struct as a system event message.
 impl SystemEvent for TestEvent {}
 
-// The actor struct must derive Clone.
-#[derive(Clone)]
+// Define the actor
 struct TestActor {
     counter: usize,
 }

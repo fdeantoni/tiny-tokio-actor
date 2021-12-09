@@ -19,8 +19,8 @@
 //! // Mark the struct as a system event message.
 //! impl SystemEvent for TestEvent {}
 //!
-//! // The actor struct must derive Clone.
-//! #[derive(Default, Clone)]
+//! // The actor struct must be Send + Sync but need not be Clone
+//! #[derive(Default)]
 //! struct TestActor {
 //!     counter: usize
 //! }

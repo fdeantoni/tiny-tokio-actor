@@ -81,9 +81,14 @@ impl<E: SystemEvent, A: Actor<E>> ActorMailbox<E, A> {
 
 pub type BoxedMessageHandler<E, A> = Box<dyn MessageHandler<E, A>>;
 
-#[derive(Clone)]
 pub struct HandlerRef<E: SystemEvent, A: Actor<E>> {
     sender: mpsc::UnboundedSender<BoxedMessageHandler<E, A>>,
+}
+
+impl<E: SystemEvent, A: Actor<E>> Clone for HandlerRef<E, A> {
+    fn clone(&self) -> Self {
+        Self { sender: self.sender.clone() }
+    }
 }
 
 impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {

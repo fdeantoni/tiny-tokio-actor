@@ -162,7 +162,7 @@ mod tests {
 
     impl SystemEvent for TestEvent {}
 
-    #[derive(Default, Clone)]
+    #[derive(Default)]
     struct TestActor {
         counter: usize,
     }

@@ -7,7 +7,6 @@ struct TestEvent(String);
 impl SystemEvent for TestEvent {}
 
 // Define the actor
-#[derive(Clone)]
 struct TestActor {
     counter: usize,
 }

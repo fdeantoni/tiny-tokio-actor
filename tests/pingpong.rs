@@ -5,14 +5,12 @@ struct EventMessage(String);
 
 impl SystemEvent for EventMessage {}
 
-#[derive(Clone)]
 struct PingActor {
     counter: i8,
 }
 
 impl Actor<EventMessage> for PingActor {}
 
-#[derive(Clone)]
 struct PongActor;
 
 impl Actor<EventMessage> for PongActor {}
