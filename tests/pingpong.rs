@@ -47,7 +47,7 @@ impl Handler<EventMessage, PingMessage> for PingActor {
     ) -> PongMessage {
         if let PingMessage::Start(message) = msg {
             let limit = message.limit;
-            if let Some(mut destination) = ctx
+            if let Some(destination) = ctx
                 .system
                 .get_actor::<PongActor>(&message.destination)
                 .await
@@ -92,7 +92,7 @@ async fn test_ping_pong() {
     let system = ActorSystem::new("test", bus);
 
     let ping = PingActor { counter: 0 };
-    let mut ping_ref = system.create_actor("ping", ping).await.unwrap();
+    let ping_ref = system.create_actor("ping", ping).await.unwrap();
     let pong = PongActor {};
     let pong_ref = system.create_actor("pong", pong).await.unwrap();
 

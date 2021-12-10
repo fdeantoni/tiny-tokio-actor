@@ -189,7 +189,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
     }
 
     /// Fire and forget sending of messages to this actor.
-    pub fn tell<M>(&mut self, msg: M) -> Result<(), ActorError>
+    pub fn tell<M>(&self, msg: M) -> Result<(), ActorError>
     where
         M: Message,
         A: Handler<E, M>,
@@ -198,7 +198,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
     }
 
     /// Send a message to an actor, expecting a response.
-    pub async fn ask<M>(&mut self, msg: M) -> Result<M::Response, ActorError>
+    pub async fn ask<M>(&self, msg: M) -> Result<M::Response, ActorError>
     where
         M: Message,
         A: Handler<E, M>,

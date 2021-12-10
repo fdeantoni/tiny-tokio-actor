@@ -78,7 +78,7 @@ async fn multi_message() {
 
     let bus = EventBus::<TestEvent>::new(1000);
     let system = ActorSystem::new("test", bus);
-    let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
+    let actor_ref = system.create_actor("test-actor", actor).await.unwrap();
 
     let mut events = system.events();
     tokio::spawn(async move {
