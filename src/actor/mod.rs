@@ -133,7 +133,7 @@ pub trait Handler<E: SystemEvent, M: Message>: Send + Sync {
 /// }
 /// ```
 #[async_trait]
-pub trait Actor<E: SystemEvent>: Clone + Send + Sync + 'static {
+pub trait Actor<E: SystemEvent>: Send + Sync + 'static {
     /// Defines the supervision strategy to use for this actor. By default it is
     /// `Stop` which simply stops the actor if an error occurs at startup. You
     /// can also set this to [`SupervisionStrategy::Retry`] with a chosen
@@ -165,10 +165,15 @@ pub trait Actor<E: SystemEvent>: Clone + Send + Sync + 'static {
 
 /// A clonable actor reference. It basically holds a Sender that can send messages
 /// to the mailbox (receiver) of the actor.
-#[derive(Clone)]
 pub struct ActorRef<E: SystemEvent, A: Actor<E>> {
     path: ActorPath,
     sender: handler::HandlerRef<E, A>,
+}
+
+impl<E: SystemEvent, A: Actor<E>> Clone for ActorRef<E, A> {
+    fn clone(&self) -> Self {
+        Self { path: self.path.clone(), sender: self.sender.clone() }
+    }
 }
 
 impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
