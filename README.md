@@ -22,10 +22,10 @@ struct TestEvent(String);
 impl SystemEvent for TestEvent {}
 ```
 
-Next define the actor struct. When implementing the `Actor` trait, you can override
-the default `pre_start()`, `pre_restart()`, and `post_stop()` methods:
+Next define the actor struct. The actor struct must be Send + Sync but need not
+be Clone. When implementing the `Actor` trait, you can override the default
+`pre_start()`, `pre_restart()`, and `post_stop()` methods:
 ```rust
-#[derive(Clone)]
 struct TestActor {
     counter: usize
 }
@@ -113,7 +113,7 @@ async fn multi_message() {
 
     let bus = EventBus::<TestEvent>::new(1000);
     let system = ActorSystem::new("test", bus);
-    let mut actor_ref = system.create_actor("test-actor", actor).await.unwrap();
+    let actor_ref = system.create_actor("test-actor", actor).await.unwrap();
 
     let mut events = system.events();
     tokio::spawn(async move {

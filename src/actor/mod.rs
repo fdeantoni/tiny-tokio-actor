@@ -103,7 +103,6 @@ pub trait Handler<E: SystemEvent, M: Message>: Send + Sync {
 /// #   }
 /// # }
 ///
-/// #[derive(Clone)]
 /// struct MyActor {
 ///     db: Option<Database>
 /// }

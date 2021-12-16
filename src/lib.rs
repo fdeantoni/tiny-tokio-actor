@@ -67,7 +67,7 @@
 //!     // Create the actor system with the event bus
 //!     let system = ActorSystem::new("test", bus);
 //!     // Launch the actor on the actor system
-//!     let mut actor_ref = system.create_actor("test-actor", actor).await?;
+//!     let actor_ref = system.create_actor("test-actor", actor).await?;
 //!
 //!     // Listen for events on the system event bus
 //!     let mut events: EventReceiver<TestEvent> = system.events();
