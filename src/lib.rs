@@ -9,7 +9,7 @@
 //! method does provide a response
 //!
 //! Example
-//! ```
+//! ```rust,no_run
 //! use tiny_tokio_actor::*;
 //!
 //! // The event message you may want to publish to the system event bus.
