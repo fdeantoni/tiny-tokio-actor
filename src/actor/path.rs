@@ -31,7 +31,7 @@ impl ActorPath {
     }
 
     pub fn key(&self) -> String {
-        self.0.last().cloned().unwrap_or_else(|| "".to_string())
+        self.0.last().cloned().unwrap_or_default()
     }
 
     pub fn level(&self) -> usize {
@@ -53,13 +53,13 @@ impl ActorPath {
     }
 
     pub fn is_ancestor_of(&self, other: &ActorPath) -> bool {
-        let me = format!("{}/", self);
+        let me = format!("{self}/");
         other.to_string().as_str().starts_with(me.as_str())
     }
 
     pub fn is_descendant_of(&self, other: &ActorPath) -> bool {
         let me = self.to_string();
-        me.as_str().starts_with(format!("{}/", other).as_str())
+        me.as_str().starts_with(format!("{other}/").as_str())
     }
 
     pub fn is_parent_of(&self, other: &ActorPath) -> bool {
@@ -143,42 +143,42 @@ mod tests {
     #[test]
     fn parse_single_root() {
         let path = ActorPath::from("/acme");
-        println!("{:?}", path);
+        println!("{path:?}");
         assert_eq!(path.0, vec!["acme"]);
     }
 
     #[test]
     fn parse_two_deep() {
         let path = ActorPath::from("/acme/building");
-        println!("{:?}", path);
+        println!("{path:?}");
         assert_eq!(path.0, vec!["acme", "building"]);
     }
 
     #[test]
     fn parse_three_deep() {
         let path = ActorPath::from("/acme/building/room");
-        println!("{:?}", path);
+        println!("{path:?}");
         assert_eq!(path.0, vec!["acme", "building", "room"]);
     }
 
     #[test]
     fn parse_levels() {
         let path = ActorPath::from("/acme/building/room/sensor");
-        println!("{:?}", path);
+        println!("{path:?}");
         assert_eq!(path.level(), 4);
     }
 
     #[test]
     fn test_get_key() {
         let path = ActorPath::from("/acme/building/room/sensor");
-        println!("{:?}", path);
+        println!("{path:?}");
         assert_eq!(path.key(), "sensor".to_string());
     }
 
     #[test]
     fn parse_get_parent() {
         let path = ActorPath::from("/acme/building/room/sensor").parent();
-        println!("{:?}", path);
+        println!("{path:?}");
         assert_eq!(path.parent().0, vec!["acme", "building"]);
     }
 
@@ -186,7 +186,7 @@ mod tests {
     fn parse_to_string() {
         let path = ActorPath::from("/acme/building/room/sensor");
         let string = path.to_string();
-        println!("{:?}", string);
+        println!("{string:?}");
         assert_eq!(string, "/acme/building/room/sensor");
     }
 
@@ -194,7 +194,7 @@ mod tests {
     fn parse_root_at_root() {
         let path = ActorPath::from("/acme");
         let string = path.root().to_string();
-        println!("{:?}", string);
+        println!("{string:?}");
         assert_eq!(string, "/acme");
     }
 
@@ -202,7 +202,7 @@ mod tests {
     fn parse_parent_at_root() {
         let path = ActorPath::from("/acme");
         let string = path.parent().to_string();
-        println!("{:?}", string);
+        println!("{string:?}");
         assert_eq!(string, "/");
     }
 
@@ -210,7 +210,7 @@ mod tests {
     fn parse_root_to_string() {
         let path = ActorPath::from("/acme/building/room/sensor");
         let string = path.root().to_string();
-        println!("{:?}", string);
+        println!("{string:?}");
         assert_eq!(string, "/acme");
     }
 
@@ -258,8 +258,8 @@ mod tests {
     fn test_if_root() {
         let path = ActorPath::from("/acme/building/room/sensor");
         let root = path.root();
-        println!("{:?}", path);
-        println!("{:?}", root);
+        println!("{path:?}");
+        println!("{root:?}");
         assert!(root.is_top_level());
         assert!(!path.is_top_level());
     }

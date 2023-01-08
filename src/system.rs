@@ -340,8 +340,8 @@ mod tests {
         tokio::spawn(async move {
             loop {
                 match events.recv().await {
-                    Ok(event) => println!("Received event! {:?}", event),
-                    Err(err) => println!("Error receivng event!!! {:?}", err),
+                    Ok(event) => println!("Received event! {event:?}"),
+                    Err(err) => println!("Error receivng event!!! {err:?}"),
                 }
             }
         });
@@ -377,7 +377,7 @@ mod tests {
         if let Some(actor_ref) = system.get_actor::<OtherActor>(original.path()).await {
             let msg = OtherMessage("Hello world!".to_string());
             let result = actor_ref.ask(msg).await.unwrap();
-            println!("Result is: {}", result);
+            println!("Result is: {result}");
             panic!("It should not go here!");
         }
 
@@ -412,7 +412,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
         let actors = system.actors.read().await;
         for actor in actors.keys() {
-            println!("Still active!: {:?}", actor);
+            println!("Still active!: {actor:?}");
         }
         assert_eq!(actors.len(), 0);
     }

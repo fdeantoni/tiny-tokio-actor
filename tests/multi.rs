@@ -84,8 +84,8 @@ async fn multi_message() {
     tokio::spawn(async move {
         loop {
             match events.recv().await {
-                Ok(event) => println!("Received event! {:?}", event),
-                Err(err) => println!("Error receivng event!!! {:?}", err),
+                Ok(event) => println!("Received event! {event:?}"),
+                Err(err) => println!("Error receivng event!!! {err:?}"),
             }
         }
     });

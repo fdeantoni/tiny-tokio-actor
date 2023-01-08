@@ -105,8 +105,8 @@ async fn test_ping_pong() {
     tokio::spawn(async move {
         loop {
             match events.recv().await {
-                Ok(event) => println!("Received event! {:?}", event),
-                Err(err) => println!("Error receivng event!!! {:?}", err),
+                Ok(event) => println!("Received event! {event:?}"),
+                Err(err) => println!("Error receivng event!!! {err:?}"),
             }
         }
     });

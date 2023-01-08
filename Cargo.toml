@@ -1,7 +1,7 @@
 [package]
 name = "tiny-tokio-actor"
-version = "0.3.1"
-edition = "2018"
+version = "0.3.2"
+edition = "2021"
 authors = ["fdeantoni <fdeantoni@gmail.com>"]
 license = "Apache-2.0"
 keywords = ["tokio", "actors"]
@@ -12,9 +12,9 @@ repository = "https://github.com/fdeantoni/tiny-tokio-actor"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1", features = ["sync", "time", "macros"] }
+tokio = { version = "1", features = ["sync", "time", "macros", "rt"] }
 async-trait = "0.1"
-backoff = "0.3"
+backoff = "0.4"
 log = "0.4"
 anyhow = "1.0"
 thiserror = "1.0"
@@ -22,8 +22,8 @@ thiserror = "1.0"
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
 futures = { version = "0.3", default-features = false, features = ["alloc"] }
-tokio-stream = "0.1.7"
-uuid = { version = "0.8", features = ["v4"] }
+tokio-stream = "0.1.11"
+uuid = { version = "1.2", features = ["v4"] }
 warp = { version = "0.3" }
-env_logger = "0.9"
+env_logger = "0.10"
 dotenv = "0.15.0"
