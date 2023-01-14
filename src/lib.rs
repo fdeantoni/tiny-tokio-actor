@@ -25,7 +25,9 @@
 //!     counter: usize
 //! }
 //!
-//! // Mark the struct as an actor.
+//! // Mark the struct as an actor. Note that you can optionally override
+//! // some default methods here like `timeout()` and `supervision_stragegy()`.
+//! // See the [`Actor`] trait for details.
 //! impl Actor<TestEvent> for TestActor {}
 //!
 //! // The message the actor will expect. It must derive Clone.
@@ -117,3 +119,4 @@ pub use bus::{EventBus, EventReceiver};
 pub use system::{ActorSystem, SystemEvent};
 
 pub use async_trait::async_trait;
+pub use tokio::time::Duration;

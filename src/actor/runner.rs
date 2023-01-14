@@ -28,10 +28,13 @@ impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
 
         let mut ctx = ActorContext {
             path: self.path.clone(),
-            system,
+            system: system.clone(),
         };
 
+        // Start the actor
         let mut start_error = self.actor.pre_start(&mut ctx).await.err();
+
+        // Did we encounter an error at startup? If yes, initiate supervision strategy
         if start_error.is_some() {
             let mut retries = 0;
             match A::supervision_strategy() {
@@ -59,13 +62,28 @@ impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
             }
         }
 
+        // No errors encountered at startup, so let's run the actor...
         if start_error.is_none() {
             log::debug!("Actor '{}' has started successfully.", &self.path);
-            while let Some(mut msg) = self.receiver.recv().await {
-                msg.handle(&mut self.actor, &mut ctx).await;
+
+            // If a timeout is set for this actor make sure to apply it
+            if let Some(timeout) = A::timeout() {
+                log::debug!("Timeout of {:?} set for actor {}", timeout, &self.path);
+                while let Ok(Some(mut msg)) = tokio::time::timeout(timeout, self.receiver.recv()).await {
+                    msg.handle(&mut self.actor, &mut ctx).await;
+                }
+                log::debug!("Actor timed out after {:?} of inactivity.", timeout);
+            } else {
+                // No timeout for this actor so loop indendinitely
+                while let Some(mut msg) = self.receiver.recv().await {
+                    msg.handle(&mut self.actor, &mut ctx).await;
+                }
             }
 
+            // Actor receiver has closed, so stop the actor
             self.actor.post_stop(&mut ctx).await;
+            // and remove it from the running system
+            system.stop_actor(&self.path).await;
 
             log::debug!("Actor '{}' stopped.", &self.path);
         }
@@ -80,6 +98,8 @@ mod tests {
     use crate::*;
 
     use super::*;
+
+    use tokio::time::Duration;
 
     #[derive(Clone, Debug)]
     struct TestEvent(String);
@@ -211,5 +231,36 @@ mod tests {
         runner.start(system).await;
 
         assert!(actor_ref.is_closed());
+    }
+
+    struct TimeoutActor;
+
+    impl Actor<TestEvent> for TimeoutActor {
+        fn timeout() -> Option<Duration> {
+            Some(Duration::from_millis(500))
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct TestMessage(usize);
+
+    impl Message for TestMessage {
+        type Response = usize;
+    }
+
+    #[tokio::test]
+    async fn timeout_actor() {
+        let system = start_system();
+        let path = ActorPath::from("/test/actor");
+        let actor = TimeoutActor;
+        let (mut runner, actor_ref) = ActorRunner::create(path.clone(), actor);
+
+        let instant = tokio::time::Instant::now();
+        runner.start(system.clone()).await;
+        let elapsed = instant.elapsed();
+
+        assert!(actor_ref.is_closed());
+        assert!(elapsed.as_millis() > 500);
+        assert!(system.get_actor::<TimeoutActor>(&path).await.is_none());
     }
 }

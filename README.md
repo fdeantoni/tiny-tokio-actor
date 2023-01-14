@@ -23,8 +23,9 @@ impl SystemEvent for TestEvent {}
 ```
 
 Next define the actor struct. The actor struct must be Send + Sync but need not
-be Clone. When implementing the `Actor` trait, you can override the default
-`pre_start()`, `pre_restart()`, and `post_stop()` methods:
+be Clone. When implementing the `Actor` trait, you can opt to override the default
+`timeout()`, `supervision_strategy()`, `pre_start()`, `pre_restart()`, and
+`post_stop()` methods:
 ```rust
 struct TestActor {
     counter: usize
@@ -32,6 +33,11 @@ struct TestActor {
 
 #[async_trait]
 impl Actor<TestEvent> for TestActor {
+
+    // This actor will time out after 5 seconds of not receiving a message
+    fn timeout() -> Option<Duration> {
+        Some(Duration::from_secs(5))
+    }
 
     // This actor will immediately retry 5 times if it fails to start
     fn supervision_strategy() -> SupervisionStrategy {
@@ -141,6 +147,8 @@ So basically this library provides:
 * An actor system with a message bus
 * A strongly typed actor with one or more message handlers
 * Actors referenced through ActorPaths and ActorRefs
+* A supervision stragegy per actor type
+* A timeout per actor type
 
 See the [docs](https://docs.rs/tiny-tokio-actor), [examples](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/examples), and [integration tests](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/tests) for more detailed examples.
 

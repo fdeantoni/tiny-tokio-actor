@@ -5,6 +5,8 @@ pub(crate) mod supervision;
 use async_trait::async_trait;
 use thiserror::Error;
 
+use tokio::time::Duration;
+
 mod path;
 pub use path::ActorPath;
 
@@ -110,6 +112,11 @@ pub trait Handler<E: SystemEvent, M: Message>: Send + Sync {
 /// #[async_trait]
 /// impl Actor<TestEvent> for MyActor {
 ///
+///     // This actor will stop after 5 seconds of not receiving a message
+///     fn timeout() -> Option<Duration> {
+///         Some(Duration::from_secs(5))
+///     }
+///
 ///     // If it fails to start up, retry the actor 5 times, with a wait period
 ///     // of 5 seconds before each retry
 ///     fn supervision_strategy() -> SupervisionStrategy {
@@ -133,6 +140,16 @@ pub trait Handler<E: SystemEvent, M: Message>: Send + Sync {
 /// ```
 #[async_trait]
 pub trait Actor<E: SystemEvent>: Send + Sync + 'static {
+
+    /// Defines the timeout to set for this actor. An actor will wait for the
+    /// defined time to receive a message. If no message is received within the
+    /// timeout time specified, the actor will stop.
+    ///
+    /// By default this is set to None (no timeout).
+    fn timeout() -> Option<Duration> {
+        None
+    }
+
     /// Defines the supervision strategy to use for this actor. By default it is
     /// `Stop` which simply stops the actor if an error occurs at startup. You
     /// can also set this to [`SupervisionStrategy::Retry`] with a chosen

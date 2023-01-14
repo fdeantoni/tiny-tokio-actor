@@ -317,6 +317,7 @@ mod tests {
             assert_eq!(result, 1);
 
             system.stop_actor(actor_ref.path()).await;
+            assert!(system.get_actor::<TestActor>(actor_ref.path()).await.is_none());
         }
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
