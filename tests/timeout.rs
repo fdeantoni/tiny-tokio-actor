@@ -97,7 +97,7 @@ async fn timeout_message() {
     assert_eq!(response, "Ping!".to_string());
 
     // Wait longer than the timeout
-    tokio::time::sleep(tokio::time::Duration::from_millis(510)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(800)).await;
     // Send message within the timeout
     let response = actor_ref.ask(msg).await;
     println!("Reponse {:?}", response);
