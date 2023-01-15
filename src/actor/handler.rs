@@ -19,7 +19,7 @@ struct ActorMessage<M, E, A>
 where
     M: Message,
     E: SystemEvent,
-    A: Actor<E> + Handler<E, M>,
+    A: Handler<E, M>,
 {
     payload: M,
     rsvp: Option<oneshot::Sender<M::Response>>,
@@ -32,7 +32,7 @@ impl<M, E, A> MessageHandler<E, A> for ActorMessage<M, E, A>
 where
     M: Message,
     E: SystemEvent,
-    A: Actor<E> + Handler<E, M>,
+    A: Handler<E, M>,
 {
     async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
         self.process(actor, ctx).await
@@ -43,7 +43,7 @@ impl<M, E, A> ActorMessage<M, E, A>
 where
     M: Message,
     E: SystemEvent,
-    A: Actor<E> + Handler<E, M>,
+    A: Handler<E, M>,
 {
     async fn process(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
         let result = actor.handle(self.payload.clone(), ctx).await;

@@ -77,12 +77,6 @@ pub trait Message: Clone + Send + Sync + 'static {
     type Response: Send + Sync + 'static;
 }
 
-/// Defines what the actor does with a message.
-#[async_trait]
-pub trait Handler<E: SystemEvent, M: Message>: Send + Sync {
-    async fn handle(&mut self, msg: M, ctx: &mut ActorContext<E>) -> M::Response;
-}
-
 /// Basic trait for actors. Allows you to define tasks that should be run before
 /// actor startup, when an actor restarts, and tasks that should be run after
 /// the  actor is stopped. It also allows you to define a supervisor strategy
@@ -179,6 +173,12 @@ pub trait Actor<E: SystemEvent>: Send + Sync + 'static {
     async fn post_stop(&mut self, _ctx: &mut ActorContext<E>) {}
 }
 
+/// Defines what the actor does with a message.
+#[async_trait]
+pub trait Handler<E: SystemEvent, M: Message>: Actor<E> {
+    async fn handle(&mut self, msg: M, ctx: &mut ActorContext<E>) -> M::Response;
+}
+
 /// A clonable actor reference. It basically holds a Sender that can send messages
 /// to the mailbox (receiver) of the actor.
 pub struct ActorRef<E: SystemEvent, A: Actor<E>> {
@@ -195,12 +195,6 @@ impl<E: SystemEvent, A: Actor<E>> Clone for ActorRef<E, A> {
 impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
     /// Get the path of this actor
     pub fn path(&self) -> &ActorPath {
-        &self.path
-    }
-
-    /// Get the path of this actor
-    #[deprecated(since = "0.2.3", note = "please use `path` instead")]
-    pub fn get_path(&self) -> &ActorPath {
         &self.path
     }
 
