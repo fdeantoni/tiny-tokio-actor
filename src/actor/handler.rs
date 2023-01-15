@@ -65,6 +65,8 @@ where
     }
 }
 
+pub type BoxedMessageHandler<E, A> = Box<dyn MessageHandler<E, A>>;
+
 pub type MailboxReceiver<E, A> = mpsc::UnboundedReceiver<BoxedMessageHandler<E, A>>;
 pub type MailboxSender<E, A> = mpsc::UnboundedSender<BoxedMessageHandler<E, A>>;
 
@@ -78,8 +80,6 @@ impl<E: SystemEvent, A: Actor<E>> ActorMailbox<E, A> {
         mpsc::unbounded_channel()
     }
 }
-
-pub type BoxedMessageHandler<E, A> = Box<dyn MessageHandler<E, A>>;
 
 pub struct HandlerRef<E: SystemEvent, A: Actor<E>> {
     sender: mpsc::UnboundedSender<BoxedMessageHandler<E, A>>,
