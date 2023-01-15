@@ -74,7 +74,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
                 }
                 log::debug!("Actor timed out after {:?} of inactivity.", timeout);
             } else {
-                // No timeout for this actor so loop indendinitely
+                // No timeout for this actor so wait indefinitely
                 while let Some(mut msg) = self.receiver.recv().await {
                     msg.handle(&mut self.actor, &mut ctx).await;
                 }
