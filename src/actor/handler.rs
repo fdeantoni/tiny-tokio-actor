@@ -8,14 +8,14 @@ use crate::{
     system::SystemEvent,
 };
 
-use super::{Actor, ActorError};
+use super::Actor;
 
 #[async_trait]
 pub trait MessageHandler<E: SystemEvent, A: Actor<E>>: Send + Sync {
     async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>);
 }
 
-struct ActorMessage<M, E, A>
+pub(crate) struct ActorMessage<M, E, A>
 where
     M: Message,
     E: SystemEvent,
@@ -81,57 +81,6 @@ impl<E: SystemEvent, A: Actor<E>> ActorMailbox<E, A> {
     }
 }
 
-pub struct HandlerRef<E: SystemEvent, A: Actor<E>> {
-    sender: mpsc::UnboundedSender<BoxedMessageHandler<E, A>>,
-}
-
-impl<E: SystemEvent, A: Actor<E>> Clone for HandlerRef<E, A> {
-    fn clone(&self) -> Self {
-        Self { sender: self.sender.clone() }
-    }
-}
-
-impl<E: SystemEvent, A: Actor<E>> HandlerRef<E, A> {
-    pub(crate) fn new(sender: mpsc::UnboundedSender<BoxedMessageHandler<E, A>>) -> Self {
-        HandlerRef { sender }
-    }
-
-    pub fn tell<M>(&self, msg: M) -> Result<(), ActorError>
-    where
-        M: Message,
-        A: Handler<E, M>,
-    {
-        let message = ActorMessage::<M, E, A>::new(msg, None);
-        if let Err(error) = self.sender.send(Box::new(message)) {
-            log::error!("Failed to tell message! {}", error.to_string());
-            Err(ActorError::SendError(error.to_string()))
-        } else {
-            Ok(())
-        }
-    }
-
-    pub async fn ask<M>(&self, msg: M) -> Result<M::Response, ActorError>
-    where
-        M: Message,
-        A: Handler<E, M>,
-    {
-        let (response_sender, response_receiver) = oneshot::channel();
-        let message = ActorMessage::<M, E, A>::new(msg, Some(response_sender));
-        if let Err(error) = self.sender.send(Box::new(message)) {
-            log::error!("Failed to ask message! {}", error.to_string());
-            Err(ActorError::SendError(error.to_string()))
-        } else {
-            response_receiver
-                .await
-                .map_err(|error| ActorError::SendError(error.to_string()))
-        }
-    }
-
-    pub fn is_closed(&self) -> bool {
-        self.sender.is_closed()
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -178,7 +127,7 @@ mod tests {
             MailboxSender<MyMessage, MyActor>,
             MailboxReceiver<MyMessage, MyActor>,
         ) = ActorMailbox::create();
-        let actor_ref = HandlerRef { sender };
+
         let bus = EventBus::<MyMessage>::new(1000);
         let system = ActorSystem::new("test", bus);
         let path = ActorPath::from("/test");
@@ -189,7 +138,8 @@ mod tests {
             }
         });
 
-        actor_ref.tell(msg).unwrap();
+        let message = ActorMessage::new(msg, None);
+        sender.send(Box::new(message)).ok();
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
     }
@@ -207,7 +157,7 @@ mod tests {
             MailboxSender<MyMessage, MyActor>,
             MailboxReceiver<MyMessage, MyActor>,
         ) = ActorMailbox::create();
-        let actor_ref = HandlerRef { sender };
+
         let bus = EventBus::<MyMessage>::new(1000);
         let system = ActorSystem::new("test", bus);
         let path = ActorPath::from("/test");
@@ -218,7 +168,10 @@ mod tests {
             }
         });
 
-        let result = actor_ref.ask(msg).await.unwrap();
+        let (response_sender, response_receiver) = oneshot::channel();
+        let message = ActorMessage::new(msg, Some(response_sender));
+        sender.send(Box::new(message)).ok();
+        let result = response_receiver.await.unwrap();
         assert_eq!(result, 1);
     }
 }

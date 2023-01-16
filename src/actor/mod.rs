@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use thiserror::Error;
 
 use tokio::time::Duration;
+use tokio::sync::{mpsc, oneshot};
 
 mod path;
 pub use path::ActorPath;
@@ -183,7 +184,7 @@ pub trait Handler<E: SystemEvent, M: Message>: Actor<E> {
 /// to the mailbox (receiver) of the actor.
 pub struct ActorRef<E: SystemEvent, A: Actor<E>> {
     path: ActorPath,
-    sender: handler::HandlerRef<E, A>,
+    sender: mpsc::UnboundedSender<handler::BoxedMessageHandler<E, A>>,
 }
 
 impl<E: SystemEvent, A: Actor<E>> Clone for ActorRef<E, A> {
@@ -204,7 +205,13 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
         M: Message,
         A: Handler<E, M>,
     {
-        self.sender.tell(msg)
+        let message = handler::ActorMessage::<M, E, A>::new(msg, None);
+        if let Err(error) = self.sender.send(Box::new(message)) {
+            log::error!("Failed to tell message! {}", error.to_string());
+            Err(ActorError::SendError(error.to_string()))
+        } else {
+            Ok(())
+        }
     }
 
     /// Send a message to an actor, expecting a response.
@@ -213,20 +220,28 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
         M: Message,
         A: Handler<E, M>,
     {
-        self.sender.ask(msg).await
+        let (response_sender, response_receiver) = oneshot::channel();
+        let message = handler::ActorMessage::<M, E, A>::new(msg, Some(response_sender));
+        if let Err(error) = self.sender.send(Box::new(message)) {
+            log::error!("Failed to ask message! {}", error.to_string());
+            Err(ActorError::SendError(error.to_string()))
+        } else {
+            response_receiver
+                .await
+                .map_err(|error| ActorError::SendError(error.to_string()))
+        }
     }
 
-    /// Checks if the actor message box is still open. If it is closed, the actor
+    /// Checks if the actor mailbox is still open. If it is closed, the actor
     /// is not running.
     pub fn is_closed(&self) -> bool {
         self.sender.is_closed()
     }
 
     pub(crate) fn new(path: ActorPath, sender: handler::MailboxSender<E, A>) -> Self {
-        let handler = handler::HandlerRef::new(sender);
         ActorRef {
             path,
-            sender: handler,
+            sender,
         }
     }
 }
