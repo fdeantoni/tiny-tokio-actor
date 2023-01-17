@@ -35,7 +35,13 @@ where
     A: Handler<E, M>,
 {
     async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
-        self.process(actor, ctx).await
+        let result = actor.handle(self.payload.clone(), ctx).await;
+
+        if let Some(rsvp) = std::mem::replace(&mut self.rsvp, None) {
+            rsvp.send(result).unwrap_or_else(|_failed| {
+                log::error!("Failed to send back response!");
+            })
+        }
     }
 }
 
@@ -45,16 +51,6 @@ where
     E: SystemEvent,
     A: Handler<E, M>,
 {
-    async fn process(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
-        let result = actor.handle(self.payload.clone(), ctx).await;
-
-        if let Some(rsvp) = std::mem::replace(&mut self.rsvp, None) {
-            rsvp.send(result).unwrap_or_else(|_failed| {
-                log::error!("Failed to send back response!");
-            })
-        }
-    }
-
     pub fn new(msg: M, rsvp: Option<oneshot::Sender<M::Response>>) -> Self {
         ActorMessage {
             payload: msg,
