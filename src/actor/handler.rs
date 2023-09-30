@@ -37,7 +37,7 @@ where
     async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
         let result = actor.handle(self.payload.clone(), ctx).await;
 
-        if let Some(rsvp) = std::mem::replace(&mut self.rsvp, None) {
+        if let Some(rsvp) = self.rsvp.take() {
             rsvp.send(result).unwrap_or_else(|_failed| {
                 log::error!("Failed to send back response!");
             })
