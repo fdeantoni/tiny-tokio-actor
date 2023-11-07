@@ -17,6 +17,7 @@ use crate::system::{ActorSystem, SystemEvent};
 
 /// The actor context gives a running actor access to its path, as well as the system that
 /// is running it.
+#[derive(Debug)]
 pub struct ActorContext<E: SystemEvent> {
     pub path: ActorPath,
     pub system: ActorSystem<E>,

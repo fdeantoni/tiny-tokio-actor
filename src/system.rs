@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap, sync::Arc};
+use std::{fmt, any::Any, collections::HashMap, sync::Arc};
 
 use tokio::sync::RwLock;
 
@@ -50,7 +50,7 @@ impl<E: SystemEvent> ActorSystem<E> {
             .and_then(|any| any.downcast_ref::<ActorRef<E, A>>().cloned())
     }
 
-    pub(crate) async fn create_actor_path<A: Actor<E>>(
+        pub(crate) async fn create_actor_path<A: Actor<E>>(
         &self,
         path: ActorPath,
         actor: A,
@@ -78,7 +78,7 @@ impl<E: SystemEvent> ActorSystem<E> {
 
     /// Launches a new top level actor on this actor system at the '/user' actor path. If another actor with
     /// the same name already exists, an `Err(ActorError::Exists(ActorPath))` is returned instead.
-    pub async fn create_actor<A: Actor<E>>(
+        pub async fn create_actor<A: Actor<E>>(
         &self,
         name: &str,
         actor: A,
@@ -88,7 +88,7 @@ impl<E: SystemEvent> ActorSystem<E> {
     }
 
     /// Retrieve or create a new actor on this actor system if it does not exist yet.
-    pub async fn get_or_create_actor<A, F>(
+        pub async fn get_or_create_actor<A, F>(
         &self,
         name: &str,
         actor_fn: F,
@@ -101,7 +101,7 @@ impl<E: SystemEvent> ActorSystem<E> {
         self.get_or_create_actor_path(&path, actor_fn).await
     }
 
-    pub(crate) async fn get_or_create_actor_path<A, F>(
+        pub(crate) async fn get_or_create_actor_path<A, F>(
         &self,
         path: &ActorPath,
         actor_fn: F,
@@ -121,7 +121,7 @@ impl<E: SystemEvent> ActorSystem<E> {
     }
 
     /// Stops the actor on this actor system. All its children will also be stopped.
-    pub async fn stop_actor(&self, path: &ActorPath) {
+        pub async fn stop_actor(&self, path: &ActorPath) {
         log::debug!("Stopping actor '{}' on system '{}'...", &path, &self.name);
         let mut paths: Vec<ActorPath> = vec![path.clone()];
         {
@@ -145,6 +145,14 @@ impl<E: SystemEvent> ActorSystem<E> {
         let name = name.to_string();
         let actors = Arc::new(RwLock::new(HashMap::new()));
         ActorSystem { name, actors, bus }
+    }
+}
+
+impl<E: SystemEvent> fmt::Debug for ActorSystem<E> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ActorSystem")
+            .field("name", &self.name)
+            .finish()
     }
 }
 
