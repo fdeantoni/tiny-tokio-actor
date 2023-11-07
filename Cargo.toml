@@ -1,6 +1,6 @@
 [package]
 name = "tiny-tokio-actor"
-version = "0.3.4"
+version = "0.3.5"
 edition = "2021"
 authors = ["fdeantoni <fdeantoni@gmail.com>"]
 license = "Apache-2.0"
@@ -26,4 +26,4 @@ tokio-stream = "0.1.14"
 uuid = { version = "1.4", features = ["v4"] }
 warp = { version = "0.3" }
 env_logger = "0.10"
-dotenv = "0.15.0"
+dotenvy = "0.15.0"

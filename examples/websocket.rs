@@ -21,7 +21,7 @@ impl SystemEvent for ServerEvent {}
 #[tokio::main]
 async fn main() {
     let path = std::path::Path::new(".env");
-    dotenv::from_path(path).ok();
+    dotenvy::from_path(path).ok();
 
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "info,tiny_tokio_actor=debug,websocket=debug");
