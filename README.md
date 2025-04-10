@@ -1,6 +1,6 @@
 # *Tiny Tokio Actor* #
 
-[![crates.io](https://buildstats.info/crate/tiny-tokio-actor)](https://crates.io/crates/tiny-tokio-actor) [![build](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml/badge.svg)](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml)
+[![crates.io](https://img.shields.io/crates/v/tiny-tokio-actor)](https://crates.io/crates/tiny-tokio-actor) [![build](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml/badge.svg)](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml)
 
 Another actor library! Why another? I really like the actor model for development, and wanted something simple I could use on top of [tokio](https://github.com/tokio-rs/tokio).
 
@@ -66,8 +66,8 @@ impl Actor<TestEvent> for TestActor {
 ```
 
 Next define a message you want the actor to handle. Note that you also define the
-response you expect back from the actor. If you do not want a resposne back you can
-simpy use `()` as response type.
+response you expect back from the actor. If you do not want a response back you can
+simply use `()` as response type.
 
 ```rust
 #[derive(Clone, Debug)]
