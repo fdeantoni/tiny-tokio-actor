@@ -158,7 +158,7 @@ impl<E: SystemEvent> fmt::Debug for ActorSystem<E> {
 
 #[cfg(test)]
 mod tests {
-
+    #![allow(dead_code)]
     use crate::actor::{Actor, ActorContext, Handler, Message};
     use async_trait::async_trait;
     use thiserror::Error;
@@ -256,7 +256,7 @@ mod tests {
     #[tokio::test]
     async fn actor_create() {
         if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", "trace");
+            unsafe { std::env::set_var("RUST_LOG", "trace") };
         }
         let _ = env_logger::builder().is_test(true).try_init();
 
@@ -285,7 +285,7 @@ mod tests {
     #[tokio::test]
     async fn actor_get_or_create() {
         if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", "trace");
+            unsafe { std::env::set_var("RUST_LOG", "trace") };
         }
         let _ = env_logger::builder().is_test(true).try_init();
 
@@ -308,7 +308,7 @@ mod tests {
     #[tokio::test]
     async fn actor_stop() {
         if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", "trace");
+            unsafe { std::env::set_var("RUST_LOG", "trace") };
         }
         let _ = env_logger::builder().is_test(true).try_init();
 
@@ -334,7 +334,7 @@ mod tests {
     #[tokio::test]
     async fn actor_events() {
         if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", "trace");
+            unsafe { std::env::set_var("RUST_LOG", "trace") };
         }
         let _ = env_logger::builder().is_test(true).try_init();
 
@@ -365,7 +365,7 @@ mod tests {
     #[tokio::test]
     async fn actor_get() {
         if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", "trace");
+            unsafe { std::env::set_var("RUST_LOG", "trace") };
         }
         let _ = env_logger::builder().is_test(true).try_init();
 
@@ -396,7 +396,7 @@ mod tests {
     #[tokio::test]
     async fn actor_parent_child() {
         if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", "trace");
+            unsafe { std::env::set_var("RUST_LOG", "trace") };
         }
         let _ = env_logger::builder().is_test(true).try_init();
 

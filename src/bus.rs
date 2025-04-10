@@ -1,4 +1,5 @@
 use tokio::sync::broadcast;
+#[allow(unused_imports)]
 pub use tokio::sync::broadcast::error::RecvError as EventRecvError;
 pub use tokio::sync::broadcast::error::SendError;
 use tokio::sync::broadcast::{Receiver as BroadcastReceiver, Sender as BroadcastSender};

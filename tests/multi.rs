@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use tiny_tokio_actor::*;
 
 // Define the system event bus message
@@ -70,7 +71,7 @@ impl Handler<TestEvent, OtherMessage> for TestActor {
 #[tokio::test]
 async fn multi_message() {
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "trace");
+        unsafe { std::env::set_var("RUST_LOG", "trace") };
     }
     let _ = env_logger::builder().is_test(true).try_init();
 

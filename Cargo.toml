@@ -1,7 +1,7 @@
 [package]
 name = "tiny-tokio-actor"
-version = "0.3.5"
-edition = "2021"
+version = "0.3.6"
+edition = "2024"
 authors = ["fdeantoni <fdeantoni@gmail.com>"]
 license = "Apache-2.0"
 keywords = ["tokio", "actors"]
@@ -17,7 +17,7 @@ async-trait = "0.1"
 backoff = "0.4"
 log = "0.4"
 anyhow = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
@@ -25,5 +25,5 @@ futures = { version = "0.3", default-features = false, features = ["alloc"] }
 tokio-stream = "0.1.14"
 uuid = { version = "1.4", features = ["v4"] }
 warp = { version = "0.3" }
-env_logger = "0.10"
+env_logger = "0.11"
 dotenvy = "0.15.0"

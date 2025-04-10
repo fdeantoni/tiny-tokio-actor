@@ -1,4 +1,5 @@
 # *Tiny Tokio Actor* #
+
 [![crates.io](https://buildstats.info/crate/tiny-tokio-actor)](https://crates.io/crates/tiny-tokio-actor) [![build](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml/badge.svg)](https://github.com/fdeantoni/tiny-tokio-actor/actions/workflows/rust.yml)
 
 Another actor library! Why another? I really like the actor model for development, and wanted something simple I could use on top of [tokio](https://github.com/tokio-rs/tokio).
@@ -9,11 +10,13 @@ tiny-tokio-actor = "0.3"
 ```
 
 Lets define an actor. First import the necessary crate:
+
 ```rust
 use tiny_tokio_actor::*;
 ```
 
 Next define the message we will be sending on the actor system's message bus:
+
 ```rust
 // Define the system event bus message
 #[derive(Clone, Debug)]
@@ -26,6 +29,7 @@ Next define the actor struct. The actor struct must be Send + Sync but need not
 be Clone. When implementing the `Actor` trait, you can opt to override the default
 `timeout()`, `supervision_strategy()`, `pre_start()`, `pre_restart()`, and
 `post_stop()` methods:
+
 ```rust
 struct TestActor {
     counter: usize
@@ -64,6 +68,7 @@ impl Actor<TestEvent> for TestActor {
 Next define a message you want the actor to handle. Note that you also define the
 response you expect back from the actor. If you do not want a resposne back you can
 simpy use `()` as response type.
+
 ```rust
 #[derive(Clone, Debug)]
 struct TestMessage(String);
@@ -74,6 +79,7 @@ impl Message for TestMessage {
 ```
 
 Now implement the behaviour we want from the actor when we receive the message:
+
 ```rust
 #[async_trait]
 impl Handler<TestEvent, TestMessage> for TestActor {
@@ -87,6 +93,7 @@ impl Handler<TestEvent, TestMessage> for TestActor {
 
 You can define more messages and behaviours you want the actor to handle. For example, lets
 define an `OtherMessage` we will let our actor handle:
+
 ```rust
 #[derive(Clone, Debug)]
 struct OtherMessage(usize);
@@ -107,6 +114,7 @@ impl Handler<TestEvent, OtherMessage> for TestActor {
 ```
 
 We can now test out our actor and send the two message types to it:
+
 ```rust
 #[tokio::test]
 async fn multi_message() {
@@ -144,6 +152,7 @@ async fn multi_message() {
 ```
 
 So basically this library provides:
+
 * An actor system with a message bus
 * A strongly typed actor with one or more message handlers
 * Actors referenced through ActorPaths and ActorRefs
@@ -154,10 +163,12 @@ See the [docs](https://docs.rs/tiny-tokio-actor), [examples](https://github.com/
 
 Library is still incubating! There is still a lot to be done and the API is still unstable! The
 todo list so far:
+
 * Supervisor hierarchy
 * Create macros to make the defining of actors a lot simpler
 
 Projects / blog posts that are worth checking out:
+
 * [Coerce-rs](https://github.com/LeonHartley/Coerce-rs)
 * [Actors with Tokio](https://ryhl.io/blog/actors-with-tokio/)
 * [Unbounded channel deadlock risk](https://www.reddit.com/r/rust/comments/ljx7mc/actors_with_tokio)

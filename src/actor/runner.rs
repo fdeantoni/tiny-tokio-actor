@@ -94,7 +94,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
 
 #[cfg(test)]
 mod tests {
-
+    #![allow(dead_code)]
     use crate::*;
 
     use super::*;
@@ -120,7 +120,7 @@ mod tests {
 
     fn start_system() -> ActorSystem<TestEvent> {
         if std::env::var("RUST_LOG").is_err() {
-            std::env::set_var("RUST_LOG", "trace");
+            unsafe { std::env::set_var("RUST_LOG", "trace") };
         }
         let _ = env_logger::builder().is_test(true).try_init();
 

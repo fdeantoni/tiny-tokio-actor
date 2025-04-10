@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use tiny_tokio_actor::*;
 
 #[derive(Clone, Debug)]
@@ -84,7 +85,7 @@ impl Handler<EventMessage, PingMessage> for PongActor {
 #[tokio::test]
 async fn test_ping_pong() {
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "trace");
+        unsafe { std::env::set_var("RUST_LOG", "trace") };
     }
     let _ = env_logger::builder().is_test(true).try_init();
 

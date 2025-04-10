@@ -24,7 +24,7 @@ async fn main() {
     dotenvy::from_path(path).ok();
 
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "info,tiny_tokio_actor=debug,websocket=debug");
+        unsafe { std::env::set_var("RUST_LOG", "info,tiny_tokio_actor=debug,websocket=debug") };
     }
     env_logger::init();
 
@@ -35,7 +35,10 @@ async fn main() {
 
     // Create the event bus and actor system
     let bus = EventBus::<ServerEvent>::new(1000);
-    let system = ActorSystem::new("test", bus);
+    let system = ActorSystem::new("test", bus.clone());
+
+    // Spawn a task to print events from the system bus
+    tokio::spawn(print_system_events(bus));
 
     // Create the warp WebSocket route
     let ws = warp::path!("echo")
@@ -53,6 +56,14 @@ async fn main() {
 
     // Start the server
     warp::serve(routes).run(addr).await;
+}
+
+// Routine to print events from the system bus
+async fn print_system_events(bus: EventBus<ServerEvent>) {
+    let mut subscriber = bus.subscribe();
+    while let Ok(event) = subscriber.recv().await {
+        println!("System Event: {}", event.0);
+    }
 }
 
 // Starts a new echo actor on our actor system
@@ -118,12 +129,15 @@ impl Message for EchoRequest {
 #[async_trait]
 impl Handler<ServerEvent, EchoRequest> for EchoActor {
     async fn handle(&mut self, msg: EchoRequest, ctx: &mut ActorContext<ServerEvent>) {
+        ctx.system.publish(ServerEvent(
+            format!("message received by '{}'", ctx.path),
+        ));
         ::log::debug!(
             "actor {} on system {} received message! {:?}",
             &ctx.path,
             ctx.system.name(),
             &msg
         );
-        self.sender.send(msg.0).unwrap()
+        self.sender.send(msg.0).unwrap();        
     }
 }
