@@ -1,6 +1,3 @@
-use std::net::SocketAddr;
-use std::str::FromStr;
-
 use futures::StreamExt;
 use tokio::sync::mpsc;
 use tokio::task;
@@ -28,10 +25,10 @@ async fn main() {
     }
     env_logger::init();
 
-    let addr = std::env::var("HOST_PORT")
+    let addr: std::net::SocketAddr = std::env::var("HOST_PORT")
         .ok()
-        .and_then(|string| SocketAddr::from_str(&string).ok())
-        .unwrap_or_else(|| SocketAddr::from_str("127.0.0.1:9000").unwrap());
+        .and_then(|string| string.parse().ok())
+        .unwrap_or_else(|| "127.0.0.1:9000".parse().unwrap());
 
     // Create the event bus and actor system
     let bus = EventBus::<ServerEvent>::new(1000);
@@ -43,13 +40,10 @@ async fn main() {
     // Create the warp WebSocket route
     let ws = warp::path!("echo")
         .and(warp::any().map(move || system.clone()))
-        .and(warp::addr::remote())
         .and(warp::ws())
-        .map(
-            |system: ActorSystem<ServerEvent>, remote: Option<SocketAddr>, ws: warp::ws::Ws| {
-                ws.on_upgrade(move |websocket| start_echo(system, remote, websocket))
-            },
-        );
+        .map(|system: ActorSystem<ServerEvent>, ws: warp::ws::Ws| {
+            ws.on_upgrade(move |websocket| start_echo(system, websocket))
+        });
 
     // Create the warp routes (websocket only in this case, with warp logging added)
     let routes = ws.with(warp::log("echo-server"));
@@ -67,11 +61,7 @@ async fn print_system_events(bus: EventBus<ServerEvent>) {
 }
 
 // Starts a new echo actor on our actor system
-async fn start_echo(
-    system: ActorSystem<ServerEvent>,
-    remote: Option<SocketAddr>,
-    websocket: WebSocket,
-) {
+async fn start_echo(system: ActorSystem<ServerEvent>, websocket: WebSocket) {
     // Split out the websocket into incoming and outgoing
     let (ws_out, mut ws_in) = websocket.split();
 
@@ -82,11 +72,9 @@ async fn start_echo(
 
     // Create a new echo actor with the newly created sender
     let actor = EchoActor::new(sender);
-    // Use the websocket client address to generate a unique actor name
-    let addr = remote
-        .map(|addr| addr.to_string())
-        .unwrap_or_else(|| Uuid::new_v4().to_string());
-    let actor_name = format!("echo-actor-{}", &addr);
+    // Use a UUID to generate a unique actor name
+    let id = Uuid::new_v4().to_string();
+    let actor_name = format!("echo-actor-{}", &id);
     // Launch the actor on our actor system
     let actor_ref = system.create_actor(&actor_name, actor).await.unwrap();
 
@@ -96,7 +84,7 @@ async fn start_echo(
         match result {
             Ok(msg) => actor_ref.tell(EchoRequest(msg)).unwrap(),
             Err(error) => {
-                ::log::error!("error processing ws message from {}: {:?}", &addr, error);
+                ::log::error!("error processing ws message from {}: {:?}", &id, error);
                 break;
             }
         };
