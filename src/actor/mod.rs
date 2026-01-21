@@ -2,7 +2,8 @@ pub(crate) mod handler;
 pub(crate) mod runner;
 pub(crate) mod supervision;
 
-use async_trait::async_trait;
+use std::future::Future;
+
 use thiserror::Error;
 
 use tokio::time::Duration;
@@ -105,7 +106,6 @@ pub trait Message: Clone + Send + Sync + 'static {
 ///     db: Option<Database>
 /// }
 ///
-/// #[async_trait]
 /// impl Actor<TestEvent> for MyActor {
 ///
 ///     // This actor will stop after 5 seconds of not receiving a message
@@ -134,7 +134,6 @@ pub trait Message: Clone + Send + Sync + 'static {
 ///     }
 /// }
 /// ```
-#[async_trait]
 pub trait Actor<E: SystemEvent>: Send + Sync + 'static {
 
     /// Defines the timeout to set for this actor. An actor will wait for the
@@ -155,30 +154,38 @@ pub trait Actor<E: SystemEvent>: Send + Sync + 'static {
     }
 
     /// Override this function if you like to perform initialization of the actor
-    async fn pre_start(&mut self, _ctx: &mut ActorContext<E>) -> Result<(), ActorError> {
-        Ok(())
+    fn pre_start(
+        &mut self,
+        _ctx: &mut ActorContext<E>,
+    ) -> impl Future<Output = Result<(), ActorError>> + Send {
+        async { Ok(()) }
     }
 
     /// Override this function if you want to define what should happen when an
     /// error occurs in [`Actor::pre_start()`]. By default it simply calls
     /// `pre_start()` again, but you can also choose to reinitialize the actor
     /// in some other way.
-    async fn pre_restart(
+    fn pre_restart(
         &mut self,
         ctx: &mut ActorContext<E>,
         _error: Option<&ActorError>,
-    ) -> Result<(), ActorError> {
-        self.pre_start(ctx).await
+    ) -> impl Future<Output = Result<(), ActorError>> + Send {
+        self.pre_start(ctx)
     }
 
     /// Override this function if you like to perform work when the actor is stopped
-    async fn post_stop(&mut self, _ctx: &mut ActorContext<E>) {}
+    fn post_stop(&mut self, _ctx: &mut ActorContext<E>) -> impl Future<Output = ()> + Send {
+        async {}
+    }
 }
 
 /// Defines what the actor does with a message.
-#[async_trait]
 pub trait Handler<E: SystemEvent, M: Message>: Actor<E> {
-    async fn handle(&mut self, msg: M, ctx: &mut ActorContext<E>) -> M::Response;
+    fn handle(
+        &mut self,
+        msg: M,
+        ctx: &mut ActorContext<E>,
+    ) -> impl Future<Output = M::Response> + Send;
 }
 
 /// A clonable actor reference. It basically holds a Sender that can send messages

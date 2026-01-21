@@ -2,6 +2,7 @@
 name = "tiny-tokio-actor"
 version = "0.3.6"
 edition = "2024"
+rust-version = "1.85"
 authors = ["fdeantoni <fdeantoni@gmail.com>"]
 license = "Apache-2.0"
 keywords = ["tokio", "actors"]
@@ -13,7 +14,6 @@ resolver = "2"
 
 [dependencies]
 tokio = { version = "1", features = ["sync", "time", "macros", "rt"] }
-async-trait = "0.1"
 backoff = "0.4"
 log = "0.4"
 anyhow = "1.0"

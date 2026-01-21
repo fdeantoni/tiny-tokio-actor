@@ -1,6 +1,7 @@
+use std::future::Future;
 use std::marker::PhantomData;
+use std::pin::Pin;
 
-use async_trait::async_trait;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::{
@@ -10,9 +11,14 @@ use crate::{
 
 use super::Actor;
 
-#[async_trait]
+/// Internal trait for message handling with dynamic dispatch.
+/// Uses boxed future for object safety.
 pub trait MessageHandler<E: SystemEvent, A: Actor<E>>: Send + Sync {
-    async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>);
+    fn handle<'a>(
+        &'a mut self,
+        actor: &'a mut A,
+        ctx: &'a mut ActorContext<E>,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>>;
 }
 
 pub(crate) struct ActorMessage<M, E, A>
@@ -27,21 +33,26 @@ where
     _phantom_event: PhantomData<E>,
 }
 
-#[async_trait]
 impl<M, E, A> MessageHandler<E, A> for ActorMessage<M, E, A>
 where
     M: Message,
     E: SystemEvent,
     A: Handler<E, M>,
 {
-    async fn handle(&mut self, actor: &mut A, ctx: &mut ActorContext<E>) {
-        let result = actor.handle(self.payload.clone(), ctx).await;
+    fn handle<'a>(
+        &'a mut self,
+        actor: &'a mut A,
+        ctx: &'a mut ActorContext<E>,
+    ) -> Pin<Box<dyn Future<Output = ()> + Send + 'a>> {
+        Box::pin(async move {
+            let result = actor.handle(self.payload.clone(), ctx).await;
 
-        if let Some(rsvp) = self.rsvp.take() {
-            rsvp.send(result).unwrap_or_else(|_failed| {
-                log::error!("Failed to send back response!");
-            })
-        }
+            if let Some(rsvp) = self.rsvp.take() {
+                rsvp.send(result).unwrap_or_else(|_failed| {
+                    log::error!("Failed to send back response!");
+                })
+            }
+        })
     }
 }
 
@@ -98,7 +109,6 @@ mod tests {
 
     impl SystemEvent for MyMessage {}
 
-    #[async_trait]
     impl Handler<MyMessage, MyMessage> for MyActor {
         async fn handle(&mut self, msg: MyMessage, _ctx: &mut ActorContext<MyMessage>) -> usize {
             log::debug!("received message! {:?}", &msg);

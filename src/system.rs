@@ -160,7 +160,6 @@ impl<E: SystemEvent> fmt::Debug for ActorSystem<E> {
 mod tests {
     #![allow(dead_code)]
     use crate::actor::{Actor, ActorContext, Handler, Message};
-    use async_trait::async_trait;
     use thiserror::Error;
 
     use super::*;
@@ -175,7 +174,6 @@ mod tests {
         counter: usize,
     }
 
-    #[async_trait]
     impl Actor<TestEvent> for TestActor {
         async fn pre_start(
             &mut self,
@@ -199,7 +197,6 @@ mod tests {
 
     impl SystemEvent for TestMessage {}
 
-    #[async_trait]
     impl Handler<TestEvent, TestMessage> for TestActor {
         async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> usize {
             log::debug!("received message! {:?}", &msg);
@@ -218,7 +215,6 @@ mod tests {
         child: Option<ActorRef<TestEvent, TestActor>>,
     }
 
-    #[async_trait]
     impl Actor<TestEvent> for OtherActor {
         async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
             log::debug!("OtherActor initial message: {}", &self.message);
@@ -239,7 +235,6 @@ mod tests {
         type Response = String;
     }
 
-    #[async_trait]
     impl Handler<TestEvent, OtherMessage> for OtherActor {
         async fn handle(&mut self, msg: OtherMessage, ctx: &mut ActorContext<TestEvent>) -> String {
             log::debug!("OtherActor received message! {:?}", &msg);

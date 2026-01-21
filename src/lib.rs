@@ -44,10 +44,7 @@
 //!
 //! // Define the behaviour of the actor. Note that the `handle` method
 //! // has a `String` return type because that is what we defined the
-//! // Response to be of `TestMessage`. As the method is async, we have
-//! // to annotate the implementation with the `async_trait` macro (a
-//! // re-export of the `async_trait` crate).
-//! #[async_trait]
+//! // Response to be of `TestMessage`.
 //! impl Handler<TestEvent, TestMessage> for TestActor {
 //!     async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> String {
 //!         self.counter += 1;
@@ -118,5 +115,4 @@ pub mod supervision {
 pub use bus::{EventBus, EventReceiver};
 pub use system::{ActorSystem, SystemEvent};
 
-pub use async_trait::async_trait;
 pub use tokio::time::Duration;

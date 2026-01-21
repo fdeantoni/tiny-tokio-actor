@@ -35,7 +35,6 @@ struct TestActor {
     counter: usize
 }
 
-#[async_trait]
 impl Actor<TestEvent> for TestActor {
 
     // This actor will time out after 5 seconds of not receiving a message
@@ -81,7 +80,6 @@ impl Message for TestMessage {
 Now implement the behaviour we want from the actor when we receive the message:
 
 ```rust
-#[async_trait]
 impl Handler<TestEvent, TestMessage> for TestActor {
     async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> String {
         ctx.system.publish(TestEvent(format!("Message {} received by '{}'", &msg, ctx.path)));
@@ -103,7 +101,6 @@ impl Message for OtherMessage {
 }
 
 // What the actor should do with the other message
-#[async_trait]
 impl Handler<TestEvent, OtherMessage> for TestActor {
     async fn handle(&mut self, msg: OtherMessage, ctx: &mut ActorContext<TestEvent>) -> usize {
         ctx.system.publish(TestEvent(format!("Message {} received by '{}'", &msg, ctx.path)));

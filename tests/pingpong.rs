@@ -39,7 +39,6 @@ impl Message for PongMessage {
     type Response = ();
 }
 
-#[async_trait]
 impl Handler<EventMessage, PingMessage> for PingActor {
     async fn handle(
         &mut self,
@@ -67,7 +66,6 @@ impl Handler<EventMessage, PingMessage> for PingActor {
     }
 }
 
-#[async_trait]
 impl Handler<EventMessage, PingMessage> for PongActor {
     async fn handle(
         &mut self,

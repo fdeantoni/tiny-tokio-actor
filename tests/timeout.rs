@@ -38,10 +38,7 @@ impl Message for TestMessage {
 
 // Define the behaviour of the actor. Note that the `handle` method
 // has a `String` return type because that is what we defined the
-// Response to be of `TestMessage`. As the method is async, we have
-// to annotate the implementation with the `async_trait` macro (a
-// re-export of the async-trait crate).
-#[async_trait]
+// Response to be of `TestMessage`.
 impl Handler<TestEvent, TestMessage> for TestActor {
     async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> String {
         log::debug!("received message! {:?}", &msg);

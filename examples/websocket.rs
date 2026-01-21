@@ -114,7 +114,6 @@ impl Message for EchoRequest {
     type Response = ();
 }
 
-#[async_trait]
 impl Handler<ServerEvent, EchoRequest> for EchoActor {
     async fn handle(&mut self, msg: EchoRequest, ctx: &mut ActorContext<ServerEvent>) {
         ctx.system.publish(ServerEvent(

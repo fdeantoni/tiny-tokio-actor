@@ -109,7 +109,6 @@ mod tests {
     #[derive(Clone)]
     struct NoRetryActor;
 
-    #[async_trait]
     impl Actor<TestEvent> for NoRetryActor {
         async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
             log::info!("Starting '{}'...", ctx.path);
@@ -145,7 +144,6 @@ mod tests {
         counter: usize,
     }
 
-    #[async_trait]
     impl Actor<TestEvent> for RetryNoIntervalActor {
         fn supervision_strategy() -> SupervisionStrategy {
             let strategy = supervision::NoIntervalStrategy::new(5);
@@ -195,7 +193,6 @@ mod tests {
         counter: usize,
     }
 
-    #[async_trait]
     impl Actor<TestEvent> for RetryExpBackoffActor {
         fn supervision_strategy() -> SupervisionStrategy {
             let strategy = supervision::ExponentialBackoffStrategy::new(5);
