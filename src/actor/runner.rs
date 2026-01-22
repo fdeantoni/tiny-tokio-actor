@@ -37,18 +37,16 @@ impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
         // Did we encounter an error at startup? If yes, initiate supervision strategy
         if start_error.is_some() {
             let mut retries = 0;
-            match A::supervision_strategy() {
+            let mut strategy = A::supervision_strategy();
+            match &strategy {
                 SupervisionStrategy::Stop => {
                     log::error!("Actor '{}' failed to start!", &self.path);
                 }
-                SupervisionStrategy::Retry(mut retry_strategy) => {
-                    log::debug!(
-                        "Restarting actor with retry strategy: {:?}",
-                        &retry_strategy
-                    );
-                    while retries < retry_strategy.max_retries() && start_error.is_some() {
+                _ => {
+                    log::debug!("Restarting actor with retry strategy: {:?}", &strategy);
+                    while retries < strategy.max_retries() && start_error.is_some() {
                         log::debug!("retries: {}", &retries);
-                        if let Some(duration) = retry_strategy.next_backoff() {
+                        if let Some(duration) = strategy.next_backoff() {
                             log::debug!("Backoff for {:?}", &duration);
                             tokio::time::sleep(duration).await;
                         }
@@ -94,7 +92,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRunner<E, A> {
 
 #[cfg(test)]
 mod tests {
-    #![allow(dead_code)]
+    #![expect(dead_code)]
     use crate::*;
 
     use super::*;
@@ -118,10 +116,10 @@ mod tests {
     }
 
     fn start_system() -> ActorSystem<TestEvent> {
-        if std::env::var("RUST_LOG").is_err() {
-            unsafe { std::env::set_var("RUST_LOG", "trace") };
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
+        let _ = env_logger::builder()
+            .filter_level(log::LevelFilter::Trace)
+            .is_test(true)
+            .try_init();
 
         let bus = EventBus::<TestEvent>::new(1000);
         ActorSystem::new("test", bus)
@@ -146,8 +144,7 @@ mod tests {
 
     impl Actor<TestEvent> for RetryNoIntervalActor {
         fn supervision_strategy() -> SupervisionStrategy {
-            let strategy = supervision::NoIntervalStrategy::new(5);
-            SupervisionStrategy::Retry(Box::new(strategy))
+            SupervisionStrategy::no_interval(5)
         }
 
         async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
@@ -195,8 +192,7 @@ mod tests {
 
     impl Actor<TestEvent> for RetryExpBackoffActor {
         fn supervision_strategy() -> SupervisionStrategy {
-            let strategy = supervision::ExponentialBackoffStrategy::new(5);
-            SupervisionStrategy::Retry(Box::new(strategy))
+            SupervisionStrategy::exponential_backoff(5)
         }
 
         async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {

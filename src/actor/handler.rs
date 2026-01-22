@@ -90,7 +90,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorMailbox<E, A> {
 
 #[cfg(test)]
 mod tests {
-    #![allow(dead_code)]
+    #![expect(dead_code)]
     use crate::{bus::EventBus, system::ActorSystem, ActorPath};
 
     use super::*;
@@ -122,10 +122,10 @@ mod tests {
 
     #[tokio::test]
     async fn actor_tell() {
-        if std::env::var("RUST_LOG").is_err() {
-            unsafe { std::env::set_var("RUST_LOG", "trace") };
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
+        let _ = env_logger::builder()
+            .filter_level(log::LevelFilter::Trace)
+            .is_test(true)
+            .try_init();
 
         let mut actor = MyActor { counter: 0 };
         let msg = MyMessage("Hello World!".to_string());
@@ -152,10 +152,10 @@ mod tests {
 
     #[tokio::test]
     async fn actor_ask() {
-        if std::env::var("RUST_LOG").is_err() {
-            unsafe { std::env::set_var("RUST_LOG", "trace") };
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
+        let _ = env_logger::builder()
+            .filter_level(log::LevelFilter::Trace)
+            .is_test(true)
+            .try_init();
 
         let mut actor = MyActor { counter: 0 };
         let msg = MyMessage("Hello World!".to_string());

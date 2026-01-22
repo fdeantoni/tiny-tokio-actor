@@ -101,16 +101,18 @@ pub use actor::{
 pub mod supervision {
     //! Actor Supervision Strategies
     //!
-    //! To supervise actor startup, you can choose to just have the actor Stop,
-    //! or set a [`super::RetryStrategy`]. There are three built-in strategies you can
-    //! use: [`NoIntervalStrategy`], [`FixedIntervalStrategy`],
-    //! and [`ExponentialBackoffStrategy`].
+    //! To supervise actor startup, use one of the constructor methods on
+    //! [`super::SupervisionStrategy`]:
+    //!
+    //! * `SupervisionStrategy::stop()` - Stop the actor on failure (default)
+    //! * `SupervisionStrategy::no_interval(max_retries)` - Retry immediately
+    //! * `SupervisionStrategy::fixed_interval(max_retries, interval)` - Retry with fixed delay
+    //! * `SupervisionStrategy::exponential_backoff(max_retries)` - Retry with exponential backoff
+    //! * `SupervisionStrategy::custom(strategy)` - Retry with a custom strategy
     //!
     //! You can also opt to create your own strategy by implementing the provided
     //! [`super::RetryStrategy`] trait.
-    pub use crate::actor::supervision::{
-        ExponentialBackoffStrategy, FixedIntervalStrategy, NoIntervalStrategy,
-    };
+    pub use crate::actor::supervision::ExponentialBackoffConfig;
 }
 pub use bus::{EventBus, EventReceiver};
 pub use system::{ActorSystem, SystemEvent};

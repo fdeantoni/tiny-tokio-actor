@@ -20,10 +20,10 @@ async fn main() {
     let path = std::path::Path::new(".env");
     dotenvy::from_path(path).ok();
 
-    if std::env::var("RUST_LOG").is_err() {
-        unsafe { std::env::set_var("RUST_LOG", "info,tiny_tokio_actor=debug,websocket=debug") };
-    }
-    env_logger::init();
+    env_logger::Builder::from_env(
+        env_logger::Env::default().default_filter_or("info,tiny_tokio_actor=debug,websocket=debug"),
+    )
+    .init();
 
     let addr: std::net::SocketAddr = std::env::var("HOST_PORT")
         .ok()

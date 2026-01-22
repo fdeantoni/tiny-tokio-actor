@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![expect(dead_code)]
 use tiny_tokio_actor::*;
 
 // The event message you may want to publish to the
@@ -47,10 +47,10 @@ impl Handler<TestEvent, TestMessage> for TestActor {
 
 #[tokio::test]
 async fn simple_message() {
-    if std::env::var("RUST_LOG").is_err() {
-        unsafe { std::env::set_var("RUST_LOG", "trace") };
-    }
-    let _ = env_logger::builder().is_test(true).try_init();
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Trace)
+        .is_test(true)
+        .try_init();
 
     // Create the actor
     let actor = TestActor { counter: 0 };

@@ -116,8 +116,7 @@ pub trait Message: Clone + Send + Sync + 'static {
 ///     // If it fails to start up, retry the actor 5 times, with a wait period
 ///     // of 5 seconds before each retry
 ///     fn supervision_strategy() -> SupervisionStrategy {
-///         let strategy = supervision::FixedIntervalStrategy::new(5, Duration::from_secs(5));
-///         SupervisionStrategy::Retry(Box::new(strategy))
+///         SupervisionStrategy::fixed_interval(5, Duration::from_secs(5))
 ///     }
 ///
 ///     // Initialize the database
@@ -215,7 +214,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
     {
         let message = handler::ActorMessage::<M, E, A>::new(msg, None);
         if let Err(error) = self.sender.send(Box::new(message)) {
-            log::error!("Failed to tell message! {}", error.to_string());
+            log::error!("Failed to tell message! {error}");
             Err(ActorError::SendError(error.to_string()))
         } else {
             Ok(())
@@ -231,7 +230,7 @@ impl<E: SystemEvent, A: Actor<E>> ActorRef<E, A> {
         let (response_sender, response_receiver) = oneshot::channel();
         let message = handler::ActorMessage::<M, E, A>::new(msg, Some(response_sender));
         if let Err(error) = self.sender.send(Box::new(message)) {
-            log::error!("Failed to ask message! {}", error.to_string());
+            log::error!("Failed to ask message! {error}");
             Err(ActorError::SendError(error.to_string()))
         } else {
             response_receiver

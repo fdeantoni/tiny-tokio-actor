@@ -44,8 +44,7 @@ impl Actor<TestEvent> for TestActor {
 
     // This actor will immediately retry 5 times if it fails to start
     fn supervision_strategy() -> SupervisionStrategy {
-        let strategy = supervision::NoIntervalStrategy::new(5);
-        SupervisionStrategy::Retry(Box::new(strategy))
+        SupervisionStrategy::no_interval(5)
     }
 
     async fn pre_start(&mut self, ctx: &mut ActorContext<TestEvent>) -> Result<(), ActorError> {
@@ -115,10 +114,10 @@ We can now test out our actor and send the two message types to it:
 ```rust
 #[tokio::test]
 async fn multi_message() {
-    if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "trace");
-    }
-    let _ = env_logger::builder().is_test(true).try_init();
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Trace)
+        .is_test(true)
+        .try_init();
 
     let actor = TestActor { counter: 0 };
 
@@ -157,6 +156,60 @@ So basically this library provides:
 * A timeout per actor type
 
 See the [docs](https://docs.rs/tiny-tokio-actor), [examples](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/examples), and [integration tests](https://github.com/fdeantoni/tiny-tokio-actor/tree/main/tests) for more detailed examples.
+
+## Upgrading to 0.4.0
+
+Version 0.4.0 introduces several breaking changes to leverage modern Rust features:
+
+### Removed `async_trait` dependency
+
+The `async_trait` proc macro is no longer needed. Rust 1.75+ supports async functions in traits natively. If you were using `#[async_trait]` on your `Actor` or `Handler` implementations, simply remove the attribute:
+
+```rust
+// Before (0.3.x)
+#[async_trait]
+impl Handler<TestEvent, TestMessage> for TestActor {
+    async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> String {
+        // ...
+    }
+}
+
+// After (0.4.0)
+impl Handler<TestEvent, TestMessage> for TestActor {
+    async fn handle(&mut self, msg: TestMessage, ctx: &mut ActorContext<TestEvent>) -> String {
+        // ...
+    }
+}
+```
+
+### Supervision strategy simplified API
+
+`SupervisionStrategy` now provides ergonomic constructor methods:
+
+```rust
+// Before (0.3.x)
+fn supervision_strategy() -> SupervisionStrategy {
+    let strategy = supervision::NoIntervalStrategy::new(5);
+    SupervisionStrategy::Retry(Box::new(strategy))
+}
+
+// After (0.4.0)
+fn supervision_strategy() -> SupervisionStrategy {
+    SupervisionStrategy::no_interval(5)
+}
+```
+
+Available constructors:
+
+* `SupervisionStrategy::stop()` - Stop the actor on failure (default)
+* `SupervisionStrategy::no_interval(max_retries)` - Retry immediately
+* `SupervisionStrategy::fixed_interval(max_retries, interval)` - Retry with fixed delay
+* `SupervisionStrategy::exponential_backoff(max_retries)` - Retry with exponential backoff
+* `SupervisionStrategy::custom(strategy)` - Custom retry strategy
+
+### Minimum Rust version
+
+Version 0.4.0 requires Rust 1.85+ (2024 edition).
 
 Library is still incubating! There is still a lot to be done and the API is still unstable! The
 todo list so far:

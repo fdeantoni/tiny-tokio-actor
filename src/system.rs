@@ -158,11 +158,18 @@ impl<E: SystemEvent> fmt::Debug for ActorSystem<E> {
 
 #[cfg(test)]
 mod tests {
-    #![allow(dead_code)]
+    #![expect(dead_code)]
     use crate::actor::{Actor, ActorContext, Handler, Message};
     use thiserror::Error;
 
     use super::*;
+
+    fn init_logger() {
+        let _ = env_logger::builder()
+            .filter_level(log::LevelFilter::Trace)
+            .is_test(true)
+            .try_init();
+    }
 
     #[derive(Clone, Debug)]
     struct TestEvent(String);
@@ -250,10 +257,7 @@ mod tests {
 
     #[tokio::test]
     async fn actor_create() {
-        if std::env::var("RUST_LOG").is_err() {
-            unsafe { std::env::set_var("RUST_LOG", "trace") };
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
+        init_logger();
 
         let actor = TestActor { counter: 0 };
         let msg = TestMessage(10);
@@ -279,10 +283,7 @@ mod tests {
 
     #[tokio::test]
     async fn actor_get_or_create() {
-        if std::env::var("RUST_LOG").is_err() {
-            unsafe { std::env::set_var("RUST_LOG", "trace") };
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
+        init_logger();
 
         let bus = EventBus::<TestEvent>::new(1000);
         let system = ActorSystem::new("test", bus);
@@ -302,10 +303,7 @@ mod tests {
 
     #[tokio::test]
     async fn actor_stop() {
-        if std::env::var("RUST_LOG").is_err() {
-            unsafe { std::env::set_var("RUST_LOG", "trace") };
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
+        init_logger();
 
         let actor = TestActor { counter: 0 };
         let msg = TestMessage(10);
@@ -328,10 +326,7 @@ mod tests {
 
     #[tokio::test]
     async fn actor_events() {
-        if std::env::var("RUST_LOG").is_err() {
-            unsafe { std::env::set_var("RUST_LOG", "trace") };
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
+        init_logger();
 
         let actor = TestActor { counter: 0 };
         let msg = TestMessage(10);
@@ -359,10 +354,7 @@ mod tests {
 
     #[tokio::test]
     async fn actor_get() {
-        if std::env::var("RUST_LOG").is_err() {
-            unsafe { std::env::set_var("RUST_LOG", "trace") };
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
+        init_logger();
 
         let actor = TestActor { counter: 0 };
 
@@ -390,10 +382,7 @@ mod tests {
 
     #[tokio::test]
     async fn actor_parent_child() {
-        if std::env::var("RUST_LOG").is_err() {
-            unsafe { std::env::set_var("RUST_LOG", "trace") };
-        }
-        let _ = env_logger::builder().is_test(true).try_init();
+        init_logger();
 
         let actor = OtherActor {
             message: "Initial".to_string(),
